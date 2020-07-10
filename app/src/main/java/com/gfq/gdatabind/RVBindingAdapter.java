@@ -45,7 +45,7 @@ public abstract class RVBindingAdapter<T> extends RecyclerView.Adapter<SuperBind
             try {
                 holder.getBinding().setVariable(BR_id, mDataList.get(position));
                 holder.getBinding().executePendingBindings();
-                onBinding(holder, position);
+                onBinding(holder, mDataList.get(position), position);
             } catch (Exception e) {
                 Log.e(TAG, "onBindViewHolder: item 布局文件 一定要是最外层是<layout/>的databinding类型！");
                 e.printStackTrace();
@@ -56,7 +56,7 @@ public abstract class RVBindingAdapter<T> extends RecyclerView.Adapter<SuperBind
 
 
     //设置item里面的view的事件
-    public abstract void onBinding(SuperBindingViewHolder holder, int position);
+    public abstract void onBinding(SuperBindingViewHolder holder, T currentPositionData, int position);
 
     //设置item布局文件id
     public abstract int getLayoutId();
