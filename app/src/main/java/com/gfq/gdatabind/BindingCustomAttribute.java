@@ -22,6 +22,12 @@ public class BindingCustomAttribute {
     public static void loadImage(ImageView view, String url) {
         Glide.with(view.getContext()).load(url).into(view);
     }
+    @BindingAdapter({"imageUrl", "overrideW", "overrideH"})
+    public static void loadImage(ImageView view, String url,  int w, int h) {
+        RoundedCorners roundedCorners = new RoundedCorners(dp2px(1));
+        RequestOptions options = RequestOptions.bitmapTransform(roundedCorners).override(w, h);
+        Glide.with(view.getContext()).load(url).apply(options).into(view);
+    }
 
     @BindingAdapter({"imageUrl", "corner"})
     public static void loadImage(ImageView view, String url, int dpCorner) {
@@ -41,6 +47,12 @@ public class BindingCustomAttribute {
     @BindingAdapter({"imageUrl", "placeHolder"})
     public static void loadImage(ImageView view, String url, Drawable holderDrawable) {
         Glide.with(view.getContext()).load(url).placeholder(holderDrawable).into(view);
+    }
+    @BindingAdapter({"imageUrl", "placeHolder", "overrideW", "overrideH"})
+    public static void loadImage(ImageView view, String url, Drawable holderDrawable, int w, int h) {
+        RoundedCorners roundedCorners = new RoundedCorners(dp2px(1));
+        RequestOptions options = RequestOptions.bitmapTransform(roundedCorners).override(w, h);
+        Glide.with(view.getContext()).load(url).placeholder(holderDrawable).apply(options).into(view);
     }
 
     @BindingAdapter({"imageUrl", "placeHolder", "corner"})
@@ -83,6 +95,14 @@ public class BindingCustomAttribute {
     public static void setTimeText(TextView view, long timeStamp,String format) {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(format, Locale.CHINA);
         String time = simpleDateFormat.format(new Date(timeStamp));
+        view.setText(time);
+        Log.d(TAG, "timeText format time = "+time);
+    }
+
+    @BindingAdapter({"timeText","format"})
+    public static void setTimeText(TextView view, String timeStamp,String format) {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(format, Locale.CHINA);
+        String time = simpleDateFormat.format(new Date(Long.parseLong(timeStamp)));
         view.setText(time);
         Log.d(TAG, "timeText format time = "+time);
     }
