@@ -1,11 +1,12 @@
 package com.gfq.gdatabind;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
+import androidx.databinding.ViewDataBinding;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -17,46 +18,43 @@ import java.util.List;
  * 2019/8/13  17:01
  * 作用 : recycleView 的 dataBinding 通用adapter
  */
-public abstract class RVBindingAdapter<T> extends RecyclerView.Adapter<SuperBindingViewHolder> {
-    private static final String TAG = "RVBindingAdapter";
+public abstract class BindingAdapter<T,VB extends ViewDataBinding> extends RecyclerView.Adapter<BindingViewHolder<VB>> {
+
+
     protected Context mContext;
     protected LayoutInflater mInflater;
     protected List<T> mDataList = new ArrayList<>();//数据集合
     private int BR_id;//数据的实体类在BR文件中的id。在绑定到xml中后，会自动生成这个BR文件。
 
 
-    public RVBindingAdapter(Context context, int br_id) {//构造方法传入上下文 和 BR_id
+    public BindingAdapter(Context context, int br_id) {//构造方法传入上下文 和 BR_id
         mContext = context;
         BR_id = br_id;
         mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
+    @NonNull
     @Override
-    public SuperBindingViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public BindingViewHolder<VB> onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View itemView = mInflater.inflate(getLayoutId(), parent, false);
-        return new SuperBindingViewHolder(itemView);
+        return new BindingViewHolder<VB>(itemView);
     }
 
 
     @Override
-    public void onBindViewHolder(SuperBindingViewHolder holder, final int position) {
+    public void onBindViewHolder(@NonNull BindingViewHolder<VB> holder, final int position) {
         //把数据实体类的信息传递给xml文件，同时把item在recycleView中对应位置的数据传过去
-        if (mDataList.size() != 0) {
-            try {
-                holder.getBinding().setVariable(BR_id, mDataList.get(position));
-                holder.getBinding().executePendingBindings();
-                onBinding(holder, mDataList.get(position), position);
-            } catch (Exception e) {
-                Log.e(TAG, "onBindViewHolder: item 布局文件 一定要是最外层是<layout/>的databinding类型！");
-                e.printStackTrace();
-            }
+        if(mDataList.size()!=0) {
+            holder.getBinding().setVariable(BR_id, mDataList.get(position));
+            //立即执行绑定
+            holder.getBinding().executePendingBindings();
         }
-
+        onBindView(holder, position);
     }
 
 
     //设置item里面的view的事件
-    public abstract void onBinding(SuperBindingViewHolder holder, T currentPositionData, int position);
+    public abstract void onBindView(BindingViewHolder<VB> holder, int position);
 
     //设置item布局文件id
     public abstract int getLayoutId();
@@ -96,5 +94,6 @@ public abstract class RVBindingAdapter<T> extends RecyclerView.Adapter<SuperBind
         mDataList.clear();
         notifyDataSetChanged();
     }
+
 
 }
