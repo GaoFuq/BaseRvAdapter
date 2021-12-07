@@ -1,6 +1,7 @@
 package com.gfq.baservadapter
 
 import androidx.annotation.LayoutRes
+import androidx.databinding.ViewDataBinding
 
 
 /**
@@ -13,6 +14,8 @@ import androidx.annotation.LayoutRes
  */
 open class RVSelectBean(open var select: Boolean = false)
 
-data class ViewTypeWrapper(@LayoutRes val viewTypeLayout:Int, val viewType:Int)
+data class ViewTypeWrapper(@LayoutRes val viewTypeLayout: Int, val viewType: Int)
 
-
+inline fun <reified T : ViewDataBinding> BaseVH.asBindType(): T {
+    return this.vhBinding as T
+}
