@@ -62,8 +62,17 @@ abstract class BaseRVAdapter<DataBean>(
             try {
                 holder.vhBinding.executePendingBindings()
                 onBindView(holder, dataList[position], position)
+
+                if (dataList[position] is RVSelectBean) {
+                    val data = dataList[position] as RVSelectBean
+                    if (data.select) {
+                        doOnSelect(holder, dataList[position], position)
+                    } else {
+                        doUnSelect(holder, dataList[position], position)
+                    }
+                }
             } catch (e: Exception) {
-                Log.e("【BaseRVAdapter onBindViewHolder ERROR】", "${e.message}")
+                Log.e("【ERROR】", "onBindViewHolder ${e.message}")
             }
         }
     }
@@ -71,6 +80,7 @@ abstract class BaseRVAdapter<DataBean>(
     override fun onBindViewHolder(holder: BaseVH, position: Int, payloads: MutableList<Any>) {
         super.onBindViewHolder(holder, position, payloads)
     }
+
     /**
      * 多item布局时，重写该方法
      */
@@ -196,4 +206,9 @@ abstract class BaseRVAdapter<DataBean>(
             super.getItemViewType(position)
         }
     }
+
+
+    open fun doOnSelect(holder: BaseVH, data: DataBean, position: Int) {}
+
+    open fun doUnSelect(holder: BaseVH, data: DataBean, position: Int) {}
 }
