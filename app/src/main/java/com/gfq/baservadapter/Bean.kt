@@ -19,3 +19,7 @@ data class ViewTypeWrapper(@LayoutRes val viewTypeLayout: Int, val viewType: Int
 inline fun <reified T : ViewDataBinding> BaseVH.to(): T {
     return this.vhBinding as T
 }
+
+interface OnReSelectListener{
+    fun onReSelect()
+}

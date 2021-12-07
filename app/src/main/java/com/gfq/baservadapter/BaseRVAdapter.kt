@@ -97,7 +97,10 @@ abstract class BaseRVAdapter<DataBean>(
         private set
 
 
-    fun onSingleSelectClick(position: Int) {
+    /**
+     * @param onReSelect 重复选择的处理逻辑
+     */
+    fun onSingleSelectClick(position: Int, onReSelect: OnReSelectListener? = null) {
         if (dataList.isEmpty()) return
 
         whenPositionLegit(position) {
@@ -108,10 +111,22 @@ abstract class BaseRVAdapter<DataBean>(
             }
         }
 
-        whenPositionLegit(lastSingleSelectPosition) {
-            if (dataList[lastSingleSelectPosition] is RVSelectBean) {
-                (dataList[lastSingleSelectPosition] as RVSelectBean).select = false
-                notifyItemChanged(lastSingleSelectPosition)
+
+
+        if (lastSingleSelectPosition == position) {
+            if (onReSelect == null) {
+                //默认处理
+                //不做处理
+            } else {
+                //自己处理
+                onReSelect.onReSelect()
+            }
+        }else{
+            whenPositionLegit(lastSingleSelectPosition) {
+                if (dataList[lastSingleSelectPosition] is RVSelectBean) {
+                    (dataList[lastSingleSelectPosition] as RVSelectBean).select = false
+                    notifyItemChanged(lastSingleSelectPosition)
+                }
             }
         }
 
