@@ -112,10 +112,10 @@ abstract class BaseRVAdapter<DataBean>(
             if (dataList[lastSingleSelectPosition] is RVSelectBean) {
                 (dataList[lastSingleSelectPosition] as RVSelectBean).select = false
                 notifyItemChanged(lastSingleSelectPosition)
-                lastSingleSelectPosition = position
             }
         }
 
+        lastSingleSelectPosition = position
     }
 
     private fun whenPositionLegit(position: Int, block: () -> Unit) {
