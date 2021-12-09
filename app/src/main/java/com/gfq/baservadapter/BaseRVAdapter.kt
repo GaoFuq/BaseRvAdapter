@@ -96,11 +96,14 @@ abstract class BaseRVAdapter<DataBean>(
     var lastSingleSelectPosition = -1
         private set
 
+    var lastMultipleSelectPosition = -1
+        private set
+
 
     /**
-     * @param onReSelect 重复选择的处理逻辑
+     * @param onReSelectListener 重复选择的处理逻辑，默认不做处理
      */
-    fun onSingleSelectClick(position: Int, onReSelect: OnReSelectListener? = null) {
+    fun onSingleSelectClick(position: Int, onReSelectListener: OnReSelectListener<DataBean>? = null) {
         if (dataList.isEmpty()) return
 
         whenPositionLegit(position) {
@@ -114,14 +117,14 @@ abstract class BaseRVAdapter<DataBean>(
 
 
         if (lastSingleSelectPosition == position) {
-            if (onReSelect == null) {
+            if (onReSelectListener == null) {
                 //默认处理
                 //不做处理
             } else {
                 //自己处理
-                onReSelect.onReSelect()
+                onReSelectListener.onReSelect(position,this)
             }
-        }else{
+        } else {
             whenPositionLegit(lastSingleSelectPosition) {
                 if (dataList[lastSingleSelectPosition] is RVSelectBean) {
                     (dataList[lastSingleSelectPosition] as RVSelectBean).select = false
@@ -142,16 +145,52 @@ abstract class BaseRVAdapter<DataBean>(
     }
 
 
-    fun onMultipleSelectClick(position: Int) {
+    fun onMultipleSelectClick(
+        position: Int,
+        minSelectCount: Int? = null,
+        maxSelectCount: Int? = null,
+        onCountOverMax: (() -> Unit)? = null,
+        onCountLessMin: (() -> Unit)? = null,
+        onReSelectListener: OnReSelectListener<DataBean>? = null
+    ) {
         if (dataList.isEmpty()) return
-        whenPositionLegit(position) {
-            if (dataList[position] is RVSelectBean) {
-                val b = dataList[position] as RVSelectBean
-                b.select = !b.select
+
+        minSelectCount?.let {
+            if (getMultipleSelectedCount() < it) {
+                onCountLessMin?.invoke()
+                return
             }
-            notifyItemChanged(position)
         }
+
+        maxSelectCount?.let {
+            if (getMultipleSelectedCount() > it) {
+                onCountOverMax?.invoke()
+                return
+            }
+        }
+
+        if (lastMultipleSelectPosition == position) {
+            if (onReSelectListener == null) {
+                //默认处理
+                //不做处理
+            } else {
+                //自己处理
+                onReSelectListener.onReSelect(position,this)
+            }
+        } else {
+            whenPositionLegit(position) {
+                if (dataList[position] is RVSelectBean) {
+                    val b = dataList[position] as RVSelectBean
+                    b.select = !b.select
+                }
+                notifyItemChanged(position)
+            }
+        }
+
+
     }
+
+    fun getMultipleSelectedCount() = getMultipleSelectDataList().count()
 
     fun getMultipleSelectDataList(): List<DataBean> =
         dataList.filter { (it is RVSelectBean && it.select) }

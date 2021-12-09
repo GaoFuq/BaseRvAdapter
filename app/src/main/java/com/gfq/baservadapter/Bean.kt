@@ -20,6 +20,6 @@ inline fun <reified T : ViewDataBinding> BaseVH.to(): T {
     return this.vhBinding as T
 }
 
-interface OnReSelectListener{
-    fun onReSelect()
+interface OnReSelectListener<T>{
+    fun onReSelect(position: Int, baseRVAdapter: BaseRVAdapter<T>,)
 }
