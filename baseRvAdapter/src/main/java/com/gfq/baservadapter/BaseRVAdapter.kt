@@ -15,9 +15,10 @@ import androidx.recyclerview.widget.RecyclerView
  */
 abstract class BaseRVAdapter<DataBean>(
     @LayoutRes private val itemLayoutRes: Int,
-    private val useViewType: Boolean = false,
-    private val viewTypeWrappers: List<ViewTypeWrapper>? = null,
+    private val viewTypeWrappers: List<ViewTypeWrapper>? = null
 ) : RecyclerView.Adapter<BaseVH>() {
+
+    var recyclerView: RecyclerView? = null
 
     var dataList = mutableListOf<DataBean>()
         set(value) {
@@ -25,9 +26,16 @@ abstract class BaseRVAdapter<DataBean>(
             notifyDataSetChanged()
         }
 
+    fun attachRecyclerView(recyclerView: RecyclerView?) {
+        if (recyclerView == null) {
+            this.recyclerView = recyclerView
+            this.recyclerView?.adapter = this
+        }
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BaseVH {
-        if (useViewType) {
-            viewTypeWrappers?.forEach {
+        if (viewTypeWrappers != null) {
+            viewTypeWrappers.forEach {
                 if (viewType == it.viewType) {
                     return BaseVH(
                         DataBindingUtil.inflate(
@@ -54,10 +62,8 @@ abstract class BaseRVAdapter<DataBean>(
 
 
     override fun onBindViewHolder(holder: BaseVH, position: Int) {
-        if (useViewType) {
-            viewTypeWrappers?.let {
-                onBindViewByViewType(holder, dataList[position], position, it)
-            }
+        if (viewTypeWrappers != null) {
+            onBindViewByViewType(holder, dataList[position], position, viewTypeWrappers)
         } else {
             try {
                 holder.vhBinding.executePendingBindings()
@@ -66,13 +72,13 @@ abstract class BaseRVAdapter<DataBean>(
                 if (dataList[position] is RVSelectBean) {
                     val data = dataList[position] as RVSelectBean
                     if (data.select) {
-                        doOnSelect(holder, dataList[position], position)
+                        onItemSelected(holder, dataList[position], position)
                     } else {
-                        doUnSelect(holder, dataList[position], position)
+                        onItemNotSelect(holder, dataList[position], position)
                     }
                 }
             } catch (e: Exception) {
-                Log.e("【ERROR】", "onBindViewHolder ${e.message}")
+                Log.e("【BaseRVAdapter】", "onBindViewHolder error ${e.message}")
             }
         }
     }
@@ -93,102 +99,111 @@ abstract class BaseRVAdapter<DataBean>(
 
     }
 
-    var lastSingleSelectPosition = -1
-        private set
-
-    var lastMultipleSelectPosition = -1
+    var lastSelectedPosition = -1
         private set
 
 
-    /**
-     * @param onReSelectListener 重复选择的处理逻辑，默认不做处理
-     */
-    fun onSingleSelectClick(position: Int, onReSelectListener: OnReSelectListener<DataBean>? = null) {
+    fun doSingleSelect(holder: BaseVH, position: Int) {
         if (dataList.isEmpty()) return
 
         whenPositionLegit(position) {
-            if (dataList[position] is RVSelectBean) {
-                val b = dataList[position] as RVSelectBean
-                b.select = true
-                notifyItemChanged(position)
+            whenDataIsRVSelectBean(dataList[position]) {
+                if (lastSelectedPosition == position) {
+                    setItemReSelect(holder, position)
+                } else {
+                    setItemSelected(position)
+                    setItemCancelSelect(lastSelectedPosition)
+                }
+                lastSelectedPosition = position
             }
         }
+    }
 
+    fun doMultipleSelect(
+        holder: BaseVH,
+        position: Int,
+        maxSelectCount: Int? = null,
+        onCountOverMax: (() -> Unit)? = null,
+        interceptReSelect: Boolean = false
+    ) {
+        if (dataList.isEmpty()) return
 
-
-        if (lastSingleSelectPosition == position) {
-            if (onReSelectListener == null) {
-                //默认处理
-                //不做处理
-            } else {
-                //自己处理
-                onReSelectListener.onReSelect(position,this)
-            }
-        } else {
-            whenPositionLegit(lastSingleSelectPosition) {
-                if (dataList[lastSingleSelectPosition] is RVSelectBean) {
-                    (dataList[lastSingleSelectPosition] as RVSelectBean).select = false
-                    notifyItemChanged(lastSingleSelectPosition)
+        whenPositionLegit(position) {
+            whenDataIsRVSelectBean(dataList[position]) {
+                if (it.select) {
+                    if (interceptReSelect) {
+                        setItemReSelect(holder, position)
+                    } else {
+                        setItemCancelSelect(position)
+                    }
+                } else {
+                    maxSelectCount?.let {
+                        if (getMultipleSelectedCount() >= maxSelectCount) {
+                            onCountOverMax?.invoke()
+                        } else {
+                            setItemSelected(position)
+                        }
+                    }
                 }
             }
         }
 
-        lastSingleSelectPosition = position
     }
+
+
+
+
+    fun setItemReSelect(holder: BaseVH, position: Int) {
+        whenPositionLegit(position) {
+            whenDataIsRVSelectBean(dataList[position]) {
+                Log.d("【BaseRVAdapter】", "setItemReSelect position = $position")
+                onItemReSelect(holder, dataList[position], position)
+            }
+        }
+
+    }
+
+    fun setItemSelected(position: Int) {
+        whenPositionLegit(position) {
+            whenDataIsRVSelectBean(dataList[position]) {
+                Log.d("【BaseRVAdapter】", "setItemSelected position = $position")
+                it.select = true
+                notifyItemChanged(position)
+            }
+
+        }
+    }
+
+
+    fun setItemCancelSelect(position: Int) {
+        whenPositionLegit(position) {
+            whenDataIsRVSelectBean(dataList[position]) {
+                Log.d("【BaseRVAdapter】", "setItemCancelSelect position = $position")
+                it.select = false
+                notifyItemChanged(position)
+            }
+        }
+    }
+
 
     private fun whenPositionLegit(position: Int, block: () -> Unit) {
         if (position >= 0 && position < dataList.size) {
             block()
         } else {
-            Log.e("【BaseRVAdapter ERROR】", "position 非法 = $position")
+            Log.w("【BaseRVAdapter WARN】", "position 非法 = $position")
         }
     }
 
 
-    fun onMultipleSelectClick(
-        position: Int,
-        minSelectCount: Int? = null,
-        maxSelectCount: Int? = null,
-        onCountOverMax: (() -> Unit)? = null,
-        onCountLessMin: (() -> Unit)? = null,
-        onReSelectListener: OnReSelectListener<DataBean>? = null
-    ) {
-        if (dataList.isEmpty()) return
-
-        minSelectCount?.let {
-            if (getMultipleSelectedCount() < it) {
-                onCountLessMin?.invoke()
-                return
-            }
-        }
-
-        maxSelectCount?.let {
-            if (getMultipleSelectedCount() > it) {
-                onCountOverMax?.invoke()
-                return
-            }
-        }
-
-        if (lastMultipleSelectPosition == position) {
-            if (onReSelectListener == null) {
-                //默认处理
-                //不做处理
-            } else {
-                //自己处理
-                onReSelectListener.onReSelect(position,this)
-            }
+    private fun whenDataIsRVSelectBean(data: DataBean, block: (RVSelectBean) -> Unit) {
+        if (data is RVSelectBean) {
+            block(data as RVSelectBean)
         } else {
-            whenPositionLegit(position) {
-                if (dataList[position] is RVSelectBean) {
-                    val b = dataList[position] as RVSelectBean
-                    b.select = !b.select
-                }
-                notifyItemChanged(position)
-            }
+            Log.e("【BaseRVAdapter】", "${data!!::class.java.name} require extends RVSelectBean")
         }
-
-
     }
+
+
 
     fun getMultipleSelectedCount() = getMultipleSelectDataList().count()
 
@@ -227,8 +242,11 @@ abstract class BaseRVAdapter<DataBean>(
 
     fun removeAt(position: Int) {
         whenPositionLegit(position) {
+            Log.d("【BaseRVAdapter】", "removeAt position = $position")
             dataList.removeAt(position)
             notifyItemRemoved(position)
+            notifyItemRangeChanged(position, dataList.size - position)
+            lastSelectedPosition = -1
         }
     }
 
@@ -250,19 +268,18 @@ abstract class BaseRVAdapter<DataBean>(
 
 
     override fun getItemViewType(position: Int): Int {
-        return if (useViewType) {
-            if (viewTypeWrappers != null) {
-                viewTypeWrappers[position].viewTypeLayout
-            } else {
-                super.getItemViewType(position)
-            }
+        return if (viewTypeWrappers != null) {
+            viewTypeWrappers[position].viewTypeLayout
         } else {
             super.getItemViewType(position)
         }
     }
 
 
-    open fun doOnSelect(holder: BaseVH, data: DataBean, position: Int) {}
+    open fun onItemSelected(holder: BaseVH, data: DataBean, position: Int) {}
 
-    open fun doUnSelect(holder: BaseVH, data: DataBean, position: Int) {}
+    open fun onItemNotSelect(holder: BaseVH, data: DataBean, position: Int) {}
+
+    open fun onItemReSelect(holder: BaseVH, data: DataBean, position: Int) {}
+
 }

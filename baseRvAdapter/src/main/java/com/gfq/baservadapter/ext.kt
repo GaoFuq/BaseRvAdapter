@@ -2,6 +2,7 @@ package com.gfq.baservadapter
 
 import androidx.annotation.LayoutRes
 import androidx.databinding.ViewDataBinding
+import androidx.recyclerview.widget.RecyclerView
 
 
 /**
@@ -16,10 +17,7 @@ open class RVSelectBean(open var select: Boolean = false)
 
 data class ViewTypeWrapper(@LayoutRes val viewTypeLayout: Int, val viewType: Int)
 
-inline fun <reified T : ViewDataBinding> BaseVH.getBinding(): T {
+inline fun <reified T : ViewDataBinding> BaseVH.get(): T {
     return this.vhBinding as T
 }
 
-interface OnReSelectListener<T>{
-    fun onReSelect(position: Int, baseRVAdapter: BaseRVAdapter<T>,)
-}
