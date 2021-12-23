@@ -1,2 +1,3 @@
+include ':baseRvAdapter'
+rootProject.name = "BaseRvAdapterSimple"
 include ':app'
-rootProject.name = "BaseRvAdapter"

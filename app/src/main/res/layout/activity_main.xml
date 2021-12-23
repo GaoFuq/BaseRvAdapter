@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+    </data>
+
+    <LinearLayout
+        android:background="#333"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity">
+
+        <TextView
+            android:id="@+id/tvMutiSelect"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="muti select"
+            android:gravity="center"
+            android:layout_margin="10dp"
+            android:background="#666"
+            android:textColor="#f69"
+           />
+        <TextView
+            android:id="@+id/tvSingleSelect"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="single select"
+            android:gravity="center"
+            android:layout_margin="10dp"
+            android:background="#666"
+            android:textColor="#f69"
+           />
+
+    </LinearLayout>
+</layout>

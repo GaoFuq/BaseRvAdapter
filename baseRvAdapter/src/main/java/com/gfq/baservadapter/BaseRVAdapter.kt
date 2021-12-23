@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.SimpleItemAnimator
 
 
 /**
@@ -19,19 +20,22 @@ abstract class BaseRVAdapter<DataBean>(
 ) : RecyclerView.Adapter<BaseVH>() {
 
     var recyclerView: RecyclerView? = null
+        set(value) {
+            if (field == null) {
+                field = value
+                field?.adapter = this
+                val amt = field?.itemAnimator
+                if (amt != null && amt is SimpleItemAnimator) {
+                    amt.supportsChangeAnimations = false
+                }
+            }
+        }
 
     var dataList = mutableListOf<DataBean>()
         set(value) {
             field = value
             notifyDataSetChanged()
         }
-
-    fun attachRecyclerView(recyclerView: RecyclerView?) {
-        if (recyclerView == null) {
-            this.recyclerView = recyclerView
-            this.recyclerView?.adapter = this
-        }
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BaseVH {
         if (viewTypeWrappers != null) {
@@ -151,8 +155,6 @@ abstract class BaseRVAdapter<DataBean>(
     }
 
 
-
-
     fun setItemReSelect(holder: BaseVH, position: Int) {
         whenPositionLegit(position) {
             whenDataIsRVSelectBean(dataList[position]) {
@@ -202,7 +204,6 @@ abstract class BaseRVAdapter<DataBean>(
             Log.e("【BaseRVAdapter】", "${data!!::class.java.name} require extends RVSelectBean")
         }
     }
-
 
 
     fun getMultipleSelectedCount() = getMultipleSelectDataList().count()
