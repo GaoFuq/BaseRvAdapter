@@ -1,6 +1,6 @@
 # BaseRvAdapter
 
-implementation 'com.github.GaoFuq:BaseRvAdapter:1.4.0'
+` implementation 'com.github.GaoFuq:BaseRvAdapter:1.4.0' `
 
 使用 databinding 封装 recyclerview 的 Adapter。
 封装了 单选 和 多选 功能。
@@ -9,12 +9,15 @@ implementation 'com.github.GaoFuq:BaseRvAdapter:1.4.0'
 v1.4.0 
 封装了分页，刷新，加载更多 RefreshHelper
 用到了第三方。
+```kotlin
 implementation 'com.scwang.smart:refresh-layout-kernel:2.0.3'
 implementation 'com.scwang.smart:refresh-footer-classics:2.0.3' //经典加载
 implementation 'com.scwang.smart:refresh-header-classics:2.0.3' //经典刷新头
+```
 
 
 1.使用 RefreshHelper ：
+```kotlin
 
 class MainActivity : BaseActivity<ActivityMainBinding>() {
 
@@ -80,14 +83,14 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 }
 
-
+```
 
 
 
 2.单独使用BaseRVAdapter ：
 
-
-        ......
+```kotlin
+  
         
         val adapter = object : BaseRVAdapter<TestBean>(R.layout.select_item) {
             override fun onBindView(holder: BaseVH, data: TestBean, position: Int) {
@@ -124,9 +127,11 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         
         adapter.recyclerView = binding.recyclerView
         
-        ......
+     
+ ```
 
  3. 依赖：
+ ```
     implementation 'androidx.core:core-ktx:1.5.0'
     implementation 'androidx.appcompat:appcompat:1.3.0'
     implementation 'com.google.android.material:material:1.4.0'
@@ -154,3 +159,4 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     implementation 'com.squareup.okhttp3:okhttp:4.8.0'
     implementation "com.squareup.retrofit2:adapter-rxjava3:2.9.0"
     implementation 'com.squareup.okhttp3:logging-interceptor:4.9.0'
+ ```
