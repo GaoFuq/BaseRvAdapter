@@ -196,6 +196,14 @@ abstract class BaseRVAdapter<DataBean>(
         }
     }
 
+    private fun whenAddDataPositionLegit(position: Int, block: () -> Unit) {
+        if (position >= 0 && position <= dataList.size) {
+            block()
+        } else {
+            Log.w("【BaseRVAdapter WARN】", "position 非法 = $position")
+        }
+    }
+
 
     private fun whenDataIsRVSelectBean(data: DataBean, block: (RVSelectBean) -> Unit) {
         if (data is RVSelectBean) {
@@ -220,7 +228,7 @@ abstract class BaseRVAdapter<DataBean>(
         } else {
             positionStart
         }
-        whenPositionLegit(posStart) {
+        whenAddDataPositionLegit(posStart) {
             if (dataList.addAll(list)) {
                 notifyItemRangeInserted(posStart, list.size)
             }
@@ -233,11 +241,10 @@ abstract class BaseRVAdapter<DataBean>(
         } else {
             positionStart
         }
-        whenPositionLegit(posStart) {
+        whenAddDataPositionLegit(posStart) {
             dataList.add(data)
             notifyItemInserted(posStart)
         }
-
     }
 
 
