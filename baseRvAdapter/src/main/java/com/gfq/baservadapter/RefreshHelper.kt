@@ -16,7 +16,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.recyclerview.widget.RecyclerView
-import com.gfq.baservadapter.BaseRVAdapter
 import com.scwang.smart.refresh.footer.ClassicsFooter
 import com.scwang.smart.refresh.header.ClassicsHeader
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
@@ -27,41 +26,63 @@ import com.scwang.smart.refresh.layout.api.RefreshLayout
  * @auth gaofuq
  * @description
  *
-      <com.scwang.smart.refresh.layout.SmartRefreshLayout
-           android:id="@+id/smartRefreshLayout"
-           android:layout_width="match_parent"
-           android:layout_height="match_parent">
+<com.scwang.smart.refresh.layout.SmartRefreshLayout
+android:id="@+id/smartRefreshLayout"
+android:layout_width="match_parent"
+android:layout_height="match_parent">
 
-           <RelativeLayout
-               android:layout_width="match_parent"
-               android:layout_height="match_parent">
+<RelativeLayout
+android:layout_width="match_parent"
+android:layout_height="match_parent">
 
-               <androidx.recyclerview.widget.RecyclerView
-                   android:id="@+id/recyclerView"
-                   app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                   android:layout_width="match_parent"
-                   android:layout_height="match_parent"/>
+<androidx.recyclerview.widget.RecyclerView
+android:id="@+id/recyclerView"
+app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+android:layout_width="match_parent"
+android:layout_height="match_parent"/>
 
-           </RelativeLayout>
-       </com.scwang.smart.refresh.layout.SmartRefreshLayout>
+</RelativeLayout>
+</com.scwang.smart.refresh.layout.SmartRefreshLayout>
 
 
-  RefreshHelper(
-        context = this,
-        smartRefreshLayout = binding.smartRefreshLayout,
-        recyclerView = binding.recyclerView,
-        adapter = adapter,
-        requestData = { curPage, pageDataNumber, callback ->
-             callback(getDataList(curPage, pageDataNumber))
-        },
-        onRefreshStateChange = {
-            Log.e("xxxx", "onRefreshStateChange " + it.name)
-            false
-        }
-    )
+1.自己赋值
+RefreshHelper(
+context = this,
+smartRefreshLayout = binding.smartRefreshLayout,
+recyclerView = binding.recyclerView,
+adapter = adapter,
+requestData = { curPage, pageDataNumber, callback ->
+callback(getDataList(curPage, pageDataNumber))
+},
+onRefreshStateChange = {
+Log.e("xxxx", "onRefreshStateChange " + it.name)
+false
+}
+)
+
+2.代码自动创建
+createRefreshHelper<String>(
+context = this,
+itemLayoutId = R.layout.select_item,
+refreshContainerView = null,
+onAdapterBindView ={holder: BaseVH, data: String, position: Int ->
+
+},
+request = {curPage: Int, pageCount: Int, callback: (List<String>?) -> Unit ->
+
+},
+onRefreshStateChange = {
+false
+}
+) .also {
+//            it.smartRefreshLayout.
+//            it.recyclerView.
+//            it.adapter.
+//            it.
+}
  */
 class RefreshHelper<DataBean>(
-    val context: Context?,
+    val activityOrFragment: Any?,
     val smartRefreshLayout: SmartRefreshLayout,
     val recyclerView: RecyclerView,
     val adapter: BaseRVAdapter<DataBean>,
@@ -73,26 +94,31 @@ class RefreshHelper<DataBean>(
     val isEnableRefresh: Boolean = true,
     val isEnableLoadMore: Boolean = true,
     val requestData: ((curPage: Int, pageCount: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
-    val onRefreshStateChange: ((state: RefreshState) -> Boolean)? = null
+    val onRefreshStateChange: ((state: RefreshState) -> Boolean)? = null,
+    val isAutoCreate: Boolean = false
 ) : LifecycleObserver {
     private val tag = "【RefreshHelper】"
-
-    private var stateViewContainer: RelativeLayout? = null//无网络，无数据视图显示的区域
-    private var loadingView: View? = null
-    private var endSuccessView: View? = null
-    private var endFailedView: View? = null
-    private var emptyView: View? = null
-    private var loseNetView: View? = null
-    private var errorView: View? = null
-    private var refreshState: RefreshState = RefreshState.normal
+    var context: Context? = null
+    var stateViewContainer: RelativeLayout? = null//无网络，无数据视图显示的区域
+    var loadingView: View? = null
+    var endSuccessView: View? = null
+    var endFailedView: View? = null
+    var emptyView: View? = null
+    var loseNetView: View? = null
+    var errorView: View? = null
+    var refreshState: RefreshState = RefreshState.normal
 
     //recyclerView  的parentView 必须是 RelativeLayout
     private fun checkStateViewContainer() {
-        val parent = this.recyclerView.parent
-        if (parent != null && parent is RelativeLayout) {
-            stateViewContainer = parent
+        if (isAutoCreate) {
+            stateViewContainer = RelativeLayout(context)
         } else {
-            throw RuntimeException("recyclerView  的 parentView 必须是 RelativeLayout")
+            val parent = this.recyclerView.parent
+            if (parent != null && parent is RelativeLayout) {
+                stateViewContainer = parent
+            } else {
+                throw RuntimeException("recyclerView  的 parentView 必须是 RelativeLayout")
+            }
         }
     }
 
@@ -121,16 +147,19 @@ class RefreshHelper<DataBean>(
     }
 
     init {
-        if (context is ComponentActivity) {
-            context.lifecycle.addObserver(this)
-            Log.e(tag, "init context is ${context.componentName.className}")
-        } else if (context is Fragment) {
-            context.lifecycle.addObserver(this)
-            Log.e(tag, "init context is Fragment , tag = ${context.tag}")
+        if (activityOrFragment is ComponentActivity) {
+            activityOrFragment.lifecycle.addObserver(this)
+            context = activityOrFragment
+            Log.e(tag, "init context is ${activityOrFragment.componentName.className}")
+        } else if (activityOrFragment is Fragment) {
+            activityOrFragment.parentFragment?.lifecycle?.addObserver(this)
+            context = activityOrFragment.context
+            Log.e(tag, "init context is Fragment , tag = ${activityOrFragment.tag}")
         }
 
-
         checkStateViewContainer()
+
+
         val li = LayoutInflater.from(context)
         loadingView = li.inflate(RefreshState.loading.layoutId, stateViewContainer, false)
         endSuccessView = li.inflate(RefreshState.endSuccess.layoutId, stateViewContainer, false)
@@ -172,6 +201,11 @@ class RefreshHelper<DataBean>(
             setOnLoadMoreListener {
                 callLoadMore(it)
             }
+        }
+
+        if (isAutoCreate) {
+            smartRefreshLayout.addView(stateViewContainer, -1, -1)
+            stateViewContainer?.addView(recyclerView, -1, -1)
         }
     }
 

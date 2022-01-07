@@ -1,6 +1,8 @@
 package com.gfq.baservadapter
 
+import android.os.Bundle
 import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.ViewDataBinding
 
 /**
@@ -9,11 +11,31 @@ import androidx.databinding.ViewDataBinding
  * @description
  */
 
-fun xx(){
-    val bind = object :BaseRVAdapter<String>(0){
-        override fun onBindView(holder: BaseVH, data: String, position: Int) {
+class Test :AppCompatActivity(){
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        createRefreshHelper<String>(
+            context = this,
+            itemLayoutId = R.layout.select_item,
+            refreshContainerView = null,
+            onAdapterBindView ={holder: BaseVH, data: String, position: Int ->
+
+            },
+            request = {curPage: Int, pageCount: Int, callback: (List<String>?) -> Unit ->
+
+            },
+            onRefreshStateChange = {
+                false
+            }
+        ) .also {
+//            setContentView(it.smartRefreshLayout)
+//            it.smartRefreshLayout.
+//            it.recyclerView.
+//            it.adapter.
+//            it.
         }
-
     }
 }
+
