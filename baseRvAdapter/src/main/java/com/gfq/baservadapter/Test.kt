@@ -17,7 +17,6 @@ class Test :AppCompatActivity(){
         super.onCreate(savedInstanceState)
 
         createRefreshHelper<String>(
-            context = this,
             itemLayoutId = R.layout.select_item,
             refreshContainerView = null,
             onAdapterBindView ={holder: BaseVH, data: String, position: Int ->
