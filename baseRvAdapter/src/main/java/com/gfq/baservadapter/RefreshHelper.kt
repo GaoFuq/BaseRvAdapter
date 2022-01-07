@@ -87,13 +87,13 @@ class RefreshHelper<DataBean>(
     val recyclerView: RecyclerView,
     val adapter: BaseRVAdapter<DataBean>,
     var curPage: Int = 1,
-    val pageDataNumber: Int = 10,
+    val pageDataCount: Int = 10,
     val pageTotalCount: Int = 999,
     val isAutoRefreshOnCreate: Boolean = true,
     val isAutoRefreshOnResume: Boolean = false,
     val isEnableRefresh: Boolean = true,
     val isEnableLoadMore: Boolean = true,
-    val requestData: ((curPage: Int, pageCount: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
+    val requestData: ((curPage: Int, pageDataCount: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
     val onRefreshStateChange: ((state: RefreshState) -> Boolean)? = null,
     val isAutoCreate: Boolean = false
 ) : LifecycleObserver {
@@ -244,7 +244,7 @@ class RefreshHelper<DataBean>(
             return
         }
         if (requestData == null) return
-        requestData.invoke(curPage, pageDataNumber) {
+        requestData.invoke(curPage, pageDataCount) {
             when {
                 it == null -> {
                     curPage--
@@ -270,7 +270,7 @@ class RefreshHelper<DataBean>(
         Log.e(tag, "doRefresh")
         curPage = 1
         if (requestData == null) return
-        requestData.invoke(curPage, pageDataNumber) {
+        requestData.invoke(curPage, pageDataCount) {
             when {
                 it == null -> {
                     updateRefreshStateView(RefreshState.error)

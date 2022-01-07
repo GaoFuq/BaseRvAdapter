@@ -31,8 +31,8 @@ inline fun <reified T : ViewDataBinding> BaseVH.get(): T {
 inline fun <reified T> FragmentActivity.createRefreshHelper(
     itemLayoutId: Int,
     refreshContainerView: ViewGroup? = null,
-    crossinline onAdapterBindView: (holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline request: (curPage: Int, pageCount: Int, callback: (List<T>?) -> Unit) -> Unit,
+    crossinline onAdapterBindView: (holder: BaseVH, data: T, position: Int,adapter:BaseRVAdapter<T>) -> Unit,
+    noinline request: (curPage: Int, pageDataCount: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onRefreshStateChange: ((state: RefreshHelper.RefreshState) -> Boolean)? = null
 ): RefreshHelper<T> {
     return RefreshHelper(
@@ -41,7 +41,7 @@ inline fun <reified T> FragmentActivity.createRefreshHelper(
         recyclerView = RecyclerView(this),
         adapter = object : BaseRVAdapter<T>(itemLayoutId) {
             override fun onBindView(holder: BaseVH, data: T, position: Int) {
-                onAdapterBindView(holder, data, position)
+                onAdapterBindView(holder, data, position,this)
             }
         },
         requestData = request,
@@ -51,11 +51,7 @@ inline fun <reified T> FragmentActivity.createRefreshHelper(
         },
         isAutoCreate = true
     ).apply {
-        if (refreshContainerView == null) {
-            setContentView(smartRefreshLayout)
-        } else {
-            refreshContainerView.addView(smartRefreshLayout)
-        }
+        refreshContainerView?.addView(smartRefreshLayout)
     }
 }
 
@@ -63,8 +59,8 @@ inline fun <reified T> FragmentActivity.createRefreshHelper(
 inline fun <reified T> Fragment.createRefreshHelper(
     itemLayoutId: Int,
     refreshContainerView: ViewGroup? = null,
-    crossinline onAdapterBindView: (holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline request: (curPage: Int, pageCount: Int, callback: (List<T>?) -> Unit) -> Unit,
+    crossinline onAdapterBindView: (holder: BaseVH, data: T, position: Int,adapter:BaseRVAdapter<T>) -> Unit,
+    noinline request: (curPage: Int, pageDataCount: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onRefreshStateChange: ((state: RefreshHelper.RefreshState) -> Boolean)? = null
 ): RefreshHelper<T> {
     return RefreshHelper(
@@ -73,7 +69,7 @@ inline fun <reified T> Fragment.createRefreshHelper(
         recyclerView = RecyclerView(context!!),
         adapter = object : BaseRVAdapter<T>(itemLayoutId) {
             override fun onBindView(holder: BaseVH, data: T, position: Int) {
-                onAdapterBindView(holder, data, position)
+                onAdapterBindView(holder, data, position,this)
             }
         },
         requestData = request,
