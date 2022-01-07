@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.scwang.smart.refresh.footer.ClassicsFooter
 import com.scwang.smart.refresh.header.ClassicsHeader
@@ -187,6 +188,11 @@ class RefreshHelper<DataBean>(
         if (adapter.recyclerView == null) {
             adapter.recyclerView = recyclerView
         }
+
+        if(recyclerView.layoutManager==null){
+            recyclerView.layoutManager = LinearLayoutManager(context)
+        }
+
         smartRefreshLayout.setEnableLoadMore(isEnableLoadMore)
         smartRefreshLayout.setEnableRefresh(isEnableRefresh)
 
