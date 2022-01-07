@@ -11,7 +11,7 @@ import androidx.databinding.ViewDataBinding
  * @description
  */
 
-class Test :AppCompatActivity(){
+internal class Test :AppCompatActivity(){
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
