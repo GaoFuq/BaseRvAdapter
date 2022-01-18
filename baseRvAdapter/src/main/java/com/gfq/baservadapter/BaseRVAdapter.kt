@@ -1,5 +1,6 @@
 package com.gfq.baservadapter
 
+import android.annotation.SuppressLint
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -16,7 +17,7 @@ import androidx.recyclerview.widget.SimpleItemAnimator
  */
 abstract class BaseRVAdapter<DataBean>(
     @LayoutRes private val itemLayoutRes: Int,
-    private val viewTypeWrappers: List<ViewTypeWrapper>? = null
+    private val viewTypeWrappers: List<ViewTypeWrapper>? = null,
 ) : RecyclerView.Adapter<BaseVH>() {
 
     var recyclerView: RecyclerView? = null
@@ -107,6 +108,9 @@ abstract class BaseRVAdapter<DataBean>(
         private set
 
 
+    /**
+     * 单选
+     */
     fun doSingleSelect(holder: BaseVH, position: Int) {
         if (dataList.isEmpty()) return
 
@@ -123,12 +127,15 @@ abstract class BaseRVAdapter<DataBean>(
         }
     }
 
+    /**
+     * 多选
+     */
     fun doMultipleSelect(
         holder: BaseVH,
         position: Int,
         maxSelectCount: Int? = null,
         onCountOverMax: (() -> Unit)? = null,
-        interceptReSelect: Boolean = false
+        interceptReSelect: Boolean = false,
     ) {
         if (dataList.isEmpty()) return
 
@@ -152,6 +159,34 @@ abstract class BaseRVAdapter<DataBean>(
             }
         }
 
+    }
+
+    /**
+     * 全选
+     */
+    @SuppressLint("NotifyDataSetChanged")
+    fun doAllSelect() {
+        if (dataList.isEmpty()) return
+        dataList.forEach { dataBean ->
+            whenDataIsRVSelectBean(dataBean) {
+                it.select = true
+            }
+        }
+        notifyDataSetChanged()
+    }
+
+    /**
+     * 反选
+     */
+    @SuppressLint("NotifyDataSetChanged")
+    fun doReverseSelect(){
+        if (dataList.isEmpty()) return
+        dataList.forEach { dataBean ->
+            whenDataIsRVSelectBean(dataBean) {
+                it.select = !it.select
+            }
+        }
+        notifyDataSetChanged()
     }
 
 
