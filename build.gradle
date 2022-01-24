@@ -3,7 +3,9 @@ buildscript {
     ext.kotlin_version = '1.6.0'
     repositories {
         google()
-        jcenter()
+        maven { url "https://jitpack.io" }
+        mavenCentral()
+        maven { url 'https://maven.aliyun.com/repository/jcenter' }
     }
     dependencies {
         classpath "com.android.tools.build:gradle:4.0.0"
@@ -18,7 +20,9 @@ buildscript {
 allprojects {
     repositories {
         google()
-        jcenter()
+        maven { url "https://jitpack.io" }
+        mavenCentral()
+        maven { url 'https://maven.aliyun.com/repository/jcenter' }
     }
 }
 

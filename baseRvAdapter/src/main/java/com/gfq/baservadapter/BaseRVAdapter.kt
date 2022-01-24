@@ -32,7 +32,7 @@ abstract class BaseRVAdapter<DataBean>(
             }
         }
 
-    var dataList = mutableListOf<DataBean>()
+    open var dataList = mutableListOf<DataBean>()
         set(value) {
             field = value
             notifyDataSetChanged()
@@ -179,7 +179,7 @@ abstract class BaseRVAdapter<DataBean>(
      * 反选
      */
     @SuppressLint("NotifyDataSetChanged")
-    fun doReverseSelect(){
+    fun doReverseSelect() {
         if (dataList.isEmpty()) return
         dataList.forEach { dataBean ->
             whenDataIsRVSelectBean(dataBean) {
@@ -289,7 +289,7 @@ abstract class BaseRVAdapter<DataBean>(
             dataList.removeAt(position)
             notifyItemRemoved(position)
             notifyItemRangeChanged(position, dataList.size - position)
-            lastSelectedPosition = -1
+            whenDataIsRVSelectBean(dataList[position]) { lastSelectedPosition = -1 }
         }
     }
 
@@ -302,6 +302,7 @@ abstract class BaseRVAdapter<DataBean>(
     fun clear() {
         dataList.clear()
         notifyDataSetChanged()
+        lastSelectedPosition = -1
     }
 
 
@@ -324,5 +325,6 @@ abstract class BaseRVAdapter<DataBean>(
     open fun onItemNotSelect(holder: BaseVH, data: DataBean, position: Int) {}
 
     open fun onItemReSelect(holder: BaseVH, data: DataBean, position: Int) {}
+
 
 }
