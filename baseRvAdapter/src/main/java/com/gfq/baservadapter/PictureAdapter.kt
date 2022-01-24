@@ -10,7 +10,6 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.luck.picture.lib.PictureSelector
 import com.luck.picture.lib.config.PictureMimeType
-import com.luck.picture.lib.config.PictureSelectionConfig.style
 import com.luck.picture.lib.entity.LocalMedia
 
 /**
@@ -35,18 +34,32 @@ abstract class PictureAdapter(
     BaseRVAdapter<String>(itemLayoutRes) {
 
     /**
-     * * 选择图片操作
+     * * 选择图片
      * @see [selectPictureWithCrop]
      * @see [selectPictureWithSquareCrop]
      * @see [selectPictureWithCircleCrop]
      * @see [selectPictureWithCompress]
      */
-    abstract fun onAddPictureClick()
+    abstract fun onSelectPictureClick()
+
 
     /**
      * * 绑定其他内容
      */
     abstract fun onBindViewOther(holder: BaseVH, data: String, position: Int)
+
+    /**
+     * * 重新选择图片
+     * @see [selectPictureWithCrop]
+     * @see [selectPictureWithSquareCrop]
+     * @see [selectPictureWithCircleCrop]
+     * @see [selectPictureWithCompress]
+     */
+    fun onReSelectPictureClick(position: Int) {
+        reSelectPicturePosition = position
+    }
+
+    private var reSelectPicturePosition: Int = -1
 
     lateinit var pictureSelector: PictureSelector
         private set
@@ -88,7 +101,7 @@ abstract class PictureAdapter(
         requestCode: Int,
         resultCode: Int,
         data: Intent?,
-        block: (picturePathList: List<String>) -> Unit,
+        block: (picturePathList: List<String>) -> Unit = {},
     ) {
         if (resultCode == RESULT_OK) {
             val list = PictureSelector.obtainMultipleResult(data)
@@ -105,27 +118,39 @@ abstract class PictureAdapter(
                 }
             }
 
+            if (reSelectPicturePosition >= 0) {
+                //重选
+                if (useList.isNotEmpty()) {
+                    setData(reSelectPicturePosition, useList[0])
+                }
+                reSelectPicturePosition = -1
+            } else {
+                //正常添加
+                if (selectRemainNum > 0) {
+                    selectRemainNum -= useList.size
+                }
+                remove(addTag)
+                addAll(useList)
 
+                block(dataList)
 
-            if (selectRemainNum > 0) {
-                selectRemainNum -= useList.size
+                if (dataList.size < maxSelectNum && selectRemainNum > 0) {
+                    add(addTag)
+                }
             }
-            remove(addTag)
-            addAll(useList)
 
-            block(dataList)
 
-            if (dataList.size < maxSelectNum && selectRemainNum > 0) {
-                add(addTag)
-            }
         }
     }
 
     override fun onBindView(holder: BaseVH, data: String, position: Int) {
         if (data == addTag) {
             //选择图片
-            holder.itemView.setOnClickListener { onAddPictureClick() }
+            holder.itemView.setOnClickListener { onSelectPictureClick() }
+        } else {
+            holder.itemView.setOnClickListener(null)
         }
+
         //删除图片
         holder.itemView.findViewWithTag<View>(deleteTag)?.setOnClickListener {
             selectRemainNum++
@@ -219,7 +244,7 @@ abstract class PictureAdapter(
             .circleDimmedLayer(isCircleCrop)//是否圆形裁剪
             .withAspectRatio(aspect_ratio_x, aspect_ratio_y)// 裁剪比例 如16:9 3:2 3:4 1:1 可自定义
             .freeStyleCropEnabled(false)// 裁剪框是否可拖拽
-            .showCropFrame(true)// 是否显示裁剪矩形边框 圆形裁剪时建议设为false
+            .showCropFrame(false)// 是否显示裁剪矩形边框 圆形裁剪时建议设为false
             .showCropGrid(false)// 是否显示裁剪矩形网格 圆形裁剪时建议设为false
             .rotateEnabled(false)
             .forResult(requestCode)

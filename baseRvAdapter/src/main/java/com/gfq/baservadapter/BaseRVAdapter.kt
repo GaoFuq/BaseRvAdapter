@@ -270,6 +270,13 @@ abstract class BaseRVAdapter<DataBean>(
         }
     }
 
+    fun setData(position: Int,data: DataBean){
+        whenPositionLegit(position){
+            dataList[position] = data
+            notifyItemChanged(position)
+        }
+    }
+
     fun add(data: DataBean, positionStart: Int = -1) {
         val posStart = if (positionStart < 0) {
             dataList.size
