@@ -106,12 +106,25 @@ abstract class PictureAdapter(
         if (resultCode == RESULT_OK) {
             val list = PictureSelector.obtainMultipleResult(data)
             if (list.isNullOrEmpty()) return
-            val useList: List<String> = when (map[requestCode] ?: Type.none) {
+            val tempList = mutableListOf<String>()
+            when (map[requestCode] ?: Type.none) {
                 Type.crop -> {
-                    list.map { it.cutPath }
+                    list.forEach {
+                        if (it.cutPath == null) {
+                            tempList.add(it.realPath)
+                        } else {
+                            tempList.add(it.cutPath)
+                        }
+                    }
                 }
                 Type.compress -> {
-                    list.map { it.compressPath }
+                    list.forEach {
+                        if (it.compressPath == null) {
+                            tempList.add(it.realPath)
+                        } else {
+                            tempList.add(it.compressPath)
+                        }
+                    }
                 }
                 Type.none -> {
                     list.map { it.realPath }
@@ -120,17 +133,17 @@ abstract class PictureAdapter(
 
             if (reSelectPicturePosition >= 0) {
                 //重选
-                if (useList.isNotEmpty()) {
-                    setData(reSelectPicturePosition, useList[0])
+                if (tempList.isNotEmpty()) {
+                    setData(reSelectPicturePosition, tempList[0])
                 }
                 reSelectPicturePosition = -1
             } else {
                 //正常添加
                 if (selectRemainNum > 0) {
-                    selectRemainNum -= useList.size
+                    selectRemainNum -= tempList.size
                 }
                 remove(addTag)
-                addAll(useList)
+                addAll(tempList)
 
                 block(dataList)
 
