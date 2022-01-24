@@ -104,17 +104,18 @@ abstract class PictureAdapter(
                 }
             }
 
-            block(useList)
 
-            if (maxSelectNum > 1) {
-                if (selectRemainNum > 0) {
-                    selectRemainNum -= useList.size
-                }
-                remove(addTag)
-                addAll(useList)
-                if (dataList.size < maxSelectNum && selectRemainNum > 0) {
-                    add(addTag)
-                }
+
+            if (selectRemainNum > 0) {
+                selectRemainNum -= useList.size
+            }
+            remove(addTag)
+            addAll(useList)
+
+            block(dataList)
+
+            if (dataList.size < maxSelectNum && selectRemainNum > 0) {
+                add(addTag)
             }
         }
     }
@@ -126,8 +127,15 @@ abstract class PictureAdapter(
         }
         //删除图片
         holder.itemView.findViewWithTag<View>(deleteTag)?.setOnClickListener {
-            removeAt(position)
             selectRemainNum++
+            if (selectRemainNum > maxSelectNum) {
+                selectRemainNum = maxSelectNum
+            }
+            remove(addTag)
+            removeAt(position)
+            if (dataList.size < maxSelectNum) {
+                add(addTag)
+            }
         }
         //设置图片到目标View
         holder.itemView.findViewWithTag<View>(targetTag)?.let {
@@ -142,13 +150,35 @@ abstract class PictureAdapter(
     /**
      * 图片预览
      */
-    fun preview(position: Int, localMedias: MutableList<LocalMedia>) {
+    fun preview(position: Int, localMedias: List<LocalMedia>) {
         if (::pictureSelector.isInitialized) {
             pictureSelector
                 .themeStyle(R.style.picture_default_style)
                 .isNotPreviewDownload(true)
                 .imageEngine(GlideEngine.createGlideEngine())
                 .openExternalPreview(position, localMedias)
+        }
+    }
+
+    /**
+     * 图片预览
+     */
+    @JvmName("preview1")
+    fun preview(position: Int, pathList: List<String>) {
+        if (::pictureSelector.isInitialized) {
+            val mediaList = mutableListOf<LocalMedia>()
+            pathList.forEach {
+                if (it != addTag) {
+                    val media = LocalMedia()
+                    media.path = it
+                    mediaList.add(media)
+                }
+            }
+            pictureSelector
+                .themeStyle(R.style.picture_default_style)
+                .isNotPreviewDownload(true)
+                .imageEngine(GlideEngine.createGlideEngine())
+                .openExternalPreview(position, mediaList)
         }
     }
 
