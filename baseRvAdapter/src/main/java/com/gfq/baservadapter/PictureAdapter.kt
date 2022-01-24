@@ -78,7 +78,10 @@ abstract class PictureAdapter(
     }
 
     private val map = mutableMapOf<Int, Type>()
-
+    private val requestCodeCrop = 111_111
+    private val requestCodeSquareCrop = 111_112
+    private val requestCodeCircleCrop = 111_113
+    private val requestCodeCompress = 111_114
 
     fun onActivityResult(
         requestCode: Int,
@@ -153,15 +156,15 @@ abstract class PictureAdapter(
     /**
      * 选择图片，方形裁剪
      */
-    fun selectPictureWithSquareCrop(requestCode: Int) {
-        selectPictureWithCrop(requestCode = requestCode)
+    fun selectPictureWithSquareCrop() {
+        selectPictureWithCrop(requestCode = requestCodeSquareCrop)
     }
 
     /**
      * 选择图片，圆形裁剪
      */
-    fun selectPictureWithCircleCrop(requestCode: Int) {
-        selectPictureWithCrop(isCircleCrop = true, requestCode = requestCode)
+    fun selectPictureWithCircleCrop() {
+        selectPictureWithCrop(isCircleCrop = true, requestCode = requestCodeCircleCrop)
     }
 
     /**
@@ -171,7 +174,7 @@ abstract class PictureAdapter(
         isCircleCrop: Boolean = false,
         aspect_ratio_x: Int = 1,
         aspect_ratio_y: Int = 1,
-        requestCode: Int,
+        requestCode: Int = requestCodeCrop,
     ) {
         if (!::pictureSelector.isInitialized) return
         map[requestCode] = Type.crop
@@ -194,9 +197,9 @@ abstract class PictureAdapter(
     /**
      * 选择图片，压缩
      */
-    fun selectPictureWithCompress(requestCode: Int) {
+    fun selectPictureWithCompress() {
         if (!::pictureSelector.isInitialized) return
-        map[requestCode] = Type.compress
+        map[requestCodeCompress] = Type.compress
         pictureSelector.openGallery(PictureMimeType.ofImage())
             .isWeChatStyle(true)
             .imageEngine(GlideEngine.createGlideEngine())
@@ -209,7 +212,7 @@ abstract class PictureAdapter(
             .showCropFrame(false)// 是否显示裁剪矩形边框 圆形裁剪时建议设为false
             .showCropGrid(false)// 是否显示裁剪矩形网格 圆形裁剪时建议设为false
             .rotateEnabled(false)
-            .forResult(requestCode)
+            .forResult(requestCodeCompress)
     }
 
     fun initPictureSelector(activity: Activity): PictureAdapter {
