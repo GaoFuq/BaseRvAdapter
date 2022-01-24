@@ -286,10 +286,10 @@ abstract class BaseRVAdapter<DataBean>(
     fun removeAt(position: Int) {
         whenPositionLegit(position) {
             Log.d("【BaseRVAdapter】", "removeAt position = $position")
+            whenDataIsRVSelectBean(dataList[position]) { lastSelectedPosition = -1 }
             dataList.removeAt(position)
             notifyItemRemoved(position)
             notifyItemRangeChanged(position, dataList.size - position)
-            whenDataIsRVSelectBean(dataList[position]) { lastSelectedPosition = -1 }
         }
     }
 

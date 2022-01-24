@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.luck.picture.lib.PictureSelector
 import com.luck.picture.lib.config.PictureMimeType
+import com.luck.picture.lib.config.PictureSelectionConfig.style
 import com.luck.picture.lib.entity.LocalMedia
 
 /**
@@ -22,14 +23,14 @@ import com.luck.picture.lib.entity.LocalMedia
  *  * 添加和删除图片 Adapter。
  *  * 默认实现了 选择图片，删除图片，设置图片。
  *  * 图片数量 [maxSelectNum] 默认9。
- *  * 需要设置 [deleteTag] ,[pictureTargetTag] 参数。
+ *  * 需要设置 [deleteTag] ,[targetTag] 参数。
  */
 abstract class PictureAdapter(
     itemLayoutRes: Int,
     /** * 删除图片的标记*/
-    val deleteTag: String? = null,
-    val pictureTargetTag: String? = null,
-    val maxSelectNum: Int = 9,
+    private val deleteTag: String,
+    private val targetTag: String,
+    private val maxSelectNum: Int = 9,
 ) :
     BaseRVAdapter<String>(itemLayoutRes) {
 
@@ -126,7 +127,7 @@ abstract class PictureAdapter(
             selectRemainNum++
         }
         //设置图片到目标View
-        holder.itemView.findViewWithTag<View>(pictureTargetTag)?.let {
+        holder.itemView.findViewWithTag<View>(targetTag)?.let {
             if (it is ImageView) {
                 Glide.with(it).load(data).into(it)
             }
