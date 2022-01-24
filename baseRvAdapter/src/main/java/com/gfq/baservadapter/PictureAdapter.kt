@@ -162,26 +162,27 @@ abstract class PictureAdapter(
             holder.itemView.setOnClickListener { onSelectPictureClick() }
         } else {
             holder.itemView.setOnClickListener(null)
+            //删除图片
+            holder.itemView.findViewWithTag<View>(deleteTag)?.setOnClickListener {
+                selectRemainNum++
+                if (selectRemainNum > maxSelectNum) {
+                    selectRemainNum = maxSelectNum
+                }
+                remove(addTag)
+                removeAt(position)
+                if (dataList.size < maxSelectNum) {
+                    add(addTag)
+                }
+            }
+            //设置图片到目标View
+            holder.itemView.findViewWithTag<View>(targetTag)?.let {
+                if (it is ImageView) {
+                    Glide.with(it).load(data).into(it)
+                }
+            }
         }
 
-        //删除图片
-        holder.itemView.findViewWithTag<View>(deleteTag)?.setOnClickListener {
-            selectRemainNum++
-            if (selectRemainNum > maxSelectNum) {
-                selectRemainNum = maxSelectNum
-            }
-            remove(addTag)
-            removeAt(position)
-            if (dataList.size < maxSelectNum) {
-                add(addTag)
-            }
-        }
-        //设置图片到目标View
-        holder.itemView.findViewWithTag<View>(targetTag)?.let {
-            if (it is ImageView) {
-                Glide.with(it).load(data).into(it)
-            }
-        }
+
         onBindViewOther(holder, data, position)
     }
 
