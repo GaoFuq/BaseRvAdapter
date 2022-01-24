@@ -65,7 +65,8 @@ abstract class PictureAdapter(
         @SuppressLint("NotifyDataSetChanged")
         set(value) {
             if (maxSelectNum > 1) {
-                if (value.size < maxSelectNum && !value.contains(addTag)) {
+                if (value.size < maxSelectNum) {
+                    value.remove(addTag)
                     value.add(addTag)
                 }
             }
