@@ -22,31 +22,33 @@ import com.luck.picture.lib.entity.LocalMedia
  *  * 添加和删除图片 Adapter。
  *  * 默认实现了 选择图片，删除图片，设置图片。
  *  * 图片数量 [maxSelectNum] 默认9。
- *  * 需要设置 [deleteTag] ,[targetTag] 参数。
+ *  * 触发删除图片的view需要设置[deleteTag]
+ *  * 选择图片
+ * @see [selectPictureWithCrop]
+ * @see [selectPictureWithSquareCrop]
+ * @see [selectPictureWithCircleCrop]
+ * @see [selectPictureWithCompress]
  */
-abstract class PictureAdapter(
+abstract class SelectPictureAdapter(
     itemLayoutRes: Int,
     /** * 删除图片的标记*/
     private val deleteTag: String,
-    private val targetTag: String,
     private val maxSelectNum: Int = 9,
 ) :
     BaseRVAdapter<String>(itemLayoutRes) {
 
+
+
     /**
-     * * 选择图片
-     * @see [selectPictureWithCrop]
-     * @see [selectPictureWithSquareCrop]
-     * @see [selectPictureWithCircleCrop]
-     * @see [selectPictureWithCompress]
+     * * 添加图片按钮itemView绑定
      */
-    abstract fun onSelectPictureClick()
-
-
+    abstract fun onBindViewAdd(holder: BaseVH, data: String, position: Int)
     /**
-     * * 绑定其他内容
+     * * 其他itemView绑定
      */
     abstract fun onBindViewOther(holder: BaseVH, data: String, position: Int)
+
+
 
     /**
      * * 重新选择图片
@@ -159,9 +161,8 @@ abstract class PictureAdapter(
     override fun onBindView(holder: BaseVH, data: String, position: Int) {
         if (data == addTag) {
             //选择图片
-            holder.itemView.setOnClickListener { onSelectPictureClick() }
+            onBindViewAdd(holder, data, position)
         } else {
-            holder.itemView.setOnClickListener(null)
             //删除图片
             holder.itemView.findViewWithTag<View>(deleteTag)?.setOnClickListener {
                 selectRemainNum++
@@ -174,16 +175,11 @@ abstract class PictureAdapter(
                     add(addTag)
                 }
             }
-            //设置图片到目标View
-            holder.itemView.findViewWithTag<View>(targetTag)?.let {
-                if (it is ImageView) {
-                    Glide.with(it).load(data).into(it)
-                }
-            }
+            onBindViewOther(holder, data, position)
         }
 
 
-        onBindViewOther(holder, data, position)
+
     }
 
 
@@ -285,14 +281,14 @@ abstract class PictureAdapter(
             .forResult(requestCodeCompress)
     }
 
-    fun initPictureSelector(activity: Activity): PictureAdapter {
+    fun initPictureSelector(activity: Activity): SelectPictureAdapter {
         if (!::pictureSelector.isInitialized) {
             pictureSelector = PictureSelector.create(activity)
         }
         return this
     }
 
-    fun initPictureSelector(fragment: Fragment): PictureAdapter {
+    fun initPictureSelector(fragment: Fragment): SelectPictureAdapter {
         if (!::pictureSelector.isInitialized) {
             pictureSelector = PictureSelector.create(fragment)
         }
