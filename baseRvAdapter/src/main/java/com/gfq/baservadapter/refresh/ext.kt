@@ -3,11 +3,13 @@ package com.gfq.baservadapter
 import android.util.Log
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
-import androidx.databinding.DataBindingUtil.setContentView
 import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
+import com.gfq.baservadapter.refresh.IStateView
+import com.gfq.baservadapter.refresh.RefreshHelper
+import com.gfq.baservadapter.refresh.State
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
 
 
@@ -31,9 +33,10 @@ inline fun <reified T : ViewDataBinding> BaseVH.get(): T {
 inline fun <reified T> FragmentActivity.createRefreshHelper(
     itemLayoutId: Int,
     refreshContainerView: ViewGroup? = null,
+    stateView: IStateView? = null,
     crossinline onAdapterBindView: (holder: BaseVH, data: T, position: Int,adapter:BaseRVAdapter<T>) -> Unit,
     noinline request: (curPage: Int, pageDataCount: Int, callback: (List<T>?) -> Unit) -> Unit,
-    noinline onRefreshStateChange: ((state: RefreshHelper.RefreshState) -> Boolean)? = null
+    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
     return RefreshHelper(
         activityOrFragment = this,
@@ -45,11 +48,9 @@ inline fun <reified T> FragmentActivity.createRefreshHelper(
             }
         },
         requestData = request,
-        onRefreshStateChange = {
-            Log.e("RefreshHelper", "onRefreshStateChange " + it.name)
-            onRefreshStateChange?.invoke(it) ?: false
-        },
-        isAutoCreate = true
+        isAutoCreate = true,
+        stateView = stateView,
+        onStateChange = onStateChange
     ).apply {
         refreshContainerView?.addView(smartRefreshLayout)
     }
@@ -59,10 +60,11 @@ inline fun <reified T> FragmentActivity.createRefreshHelper(
 inline fun <reified T> Fragment.createRefreshHelper(
     itemLayoutId: Int,
     refreshContainerView: ViewGroup? = null,
+    stateView: IStateView? = null,
     crossinline onAdapterBindView: (holder: BaseVH, data: T, position: Int,adapter:BaseRVAdapter<T>) -> Unit,
     noinline request: (curPage: Int, pageDataCount: Int, callback: (List<T>?) -> Unit) -> Unit,
-    noinline onRefreshStateChange: ((state: RefreshHelper.RefreshState) -> Boolean)? = null
-): RefreshHelper<T> {
+    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
+    ): RefreshHelper<T> {
     return RefreshHelper(
         activityOrFragment = this,
         smartRefreshLayout = SmartRefreshLayout(context),
@@ -73,10 +75,8 @@ inline fun <reified T> Fragment.createRefreshHelper(
             }
         },
         requestData = request,
-        onRefreshStateChange = {
-            Log.e("RefreshHelper", "onRefreshStateChange " + it.name)
-            onRefreshStateChange?.invoke(it) ?: false
-        },
+        onStateChange = onStateChange,
+        stateView = stateView,
         isAutoCreate = true
     ).apply {
         refreshContainerView?.addView(smartRefreshLayout)
