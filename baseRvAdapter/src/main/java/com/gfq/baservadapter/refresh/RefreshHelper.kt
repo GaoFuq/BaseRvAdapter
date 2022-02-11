@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.View
 import android.widget.RelativeLayout
 import androidx.activity.ComponentActivity
+import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
@@ -16,6 +17,7 @@ import androidx.lifecycle.OnLifecycleEvent
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gfq.baservadapter.BaseRVAdapter
+import com.gfq.baservadapter.R
 import com.scwang.smart.refresh.footer.ClassicsFooter
 import com.scwang.smart.refresh.header.ClassicsHeader
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
@@ -195,6 +197,8 @@ class RefreshHelper<DataBean>(
         }
 
         initStateView()
+
+        recyclerView.id = R.id.refresh_recycler_view
     }
 
     private fun initStateView() {
@@ -305,39 +309,43 @@ class RefreshHelper<DataBean>(
         this.state = state
         Log.d(tag,"onStateChange state = "+state.name)
         val intercept = onStateChange?.invoke(this, state)
-        if (intercept == false) {
-            stateViewContainer.removeAllViews()
+        if (intercept == null || intercept == false) {
+            stateViewContainer.children.forEach {
+                if(it.id != R.id.refresh_recycler_view){
+                    stateViewContainer.removeView(it)
+                }
+            }
             when (state) {
-                State.IDLE -> stateViewContainer.addView(recyclerView)
+                State.IDLE ->{}
                 State.REFRESH_LOADING -> stateViewRefreshLoading?.let {
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it,-1,-1)
                 }
                 State.REFRESH_SUCCESS -> stateViewRefreshSuccess?.let {
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it,-1,-1)
                 }
                 State.REFRESH_ERROR -> stateViewRefreshError?.let {
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it,-1,-1)
                 }
                 State.LOAD_MORE_LOADING -> stateViewLoadMoreLoading?.let {
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it,-1,-1)
                 }
                 State.LOAD_MORE_SUCCESS -> stateViewLoadMoreSuccess?.let {
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it,-1,-1)
                 }
                 State.LOAD_MORE_ERROR -> stateViewLoadMoreError?.let {
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it,-1,-1)
                 }
                 State.EMPTY_DATA -> stateViewEmptyData?.let {
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it,-1,-1)
                 }
                 State.EMPTY_DATA_WITH_LOAD_MORE -> stateViewEmptyDataWithLoadMore?.let {
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it,-1,-1)
                 }
                 State.EMPTY_DATA_WITH_REFRESH -> stateViewEmptyDataWithRefresh?.let {
-                        stateViewContainer.addView(it)
+                        stateViewContainer.addView(it,-1,-1)
                     }
                 State.NET_LOSE -> stateViewNetLose?.let {
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it,-1,-1)
                 }
             }
         }
