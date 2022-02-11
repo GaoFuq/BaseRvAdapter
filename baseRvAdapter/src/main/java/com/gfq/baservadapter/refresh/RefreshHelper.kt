@@ -155,11 +155,11 @@ class RefreshHelper<DataBean>(
         if (activityOrFragment is ComponentActivity) {
             activityOrFragment.lifecycle.addObserver(this)
             context = activityOrFragment
-            Log.e(tag, "init context is ${activityOrFragment.componentName.className}")
+            Log.d(tag, "init context is ${activityOrFragment.componentName.className}")
         } else if (activityOrFragment is Fragment) {
             activityOrFragment.parentFragment?.lifecycle?.addObserver(this)
             activityOrFragment.context?.let { context = it }
-            Log.e(tag, "init context is Fragment , tag = ${activityOrFragment.tag}")
+            Log.d(tag, "init context is Fragment , tag = ${activityOrFragment.tag}")
         }
 
         checkStateViewContainer()
@@ -388,7 +388,7 @@ class RefreshHelper<DataBean>(
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     fun autoRefreshOnResume() {
         if (isAutoRefreshOnResume && isEnableLoadMore) {
-            Log.e(tag, "autoRefreshOnResume")
+            Log.d(tag, "autoRefreshOnResume")
             callRefresh(smartRefreshLayout)
         }
     }
@@ -396,7 +396,7 @@ class RefreshHelper<DataBean>(
     @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
     fun autoRefreshOnCreate() {
         if (isAutoRefreshOnCreate && isEnableRefresh) {
-            Log.e(tag, "autoRefreshOnCreate")
+            Log.d(tag, "autoRefreshOnCreate")
             callRefresh(smartRefreshLayout)
         }
     }
