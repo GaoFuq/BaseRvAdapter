@@ -18,10 +18,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gfq.baservadapter.BaseRVAdapter
 import com.gfq.baservadapter.R
+import com.scwang.smart.refresh.footer.BallPulseFooter
 import com.scwang.smart.refresh.footer.ClassicsFooter
 import com.scwang.smart.refresh.header.ClassicsHeader
+import com.scwang.smart.refresh.header.MaterialHeader
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import com.scwang.smart.refresh.layout.api.RefreshLayout
+import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 
 /**
  *  2021/5/10 11:07
@@ -180,8 +183,8 @@ class RefreshHelper<DataBean>(
         smartRefreshLayout.setEnableRefresh(isEnableRefresh)
 
         smartRefreshLayout.run {
-            setRefreshHeader(ClassicsHeader(context))
-            setRefreshFooter(ClassicsFooter(context))
+            setRefreshHeader(MaterialHeader(context))
+            setRefreshFooter(BallPulseFooter(context).setSpinnerStyle(SpinnerStyle.FixedBehind))
             setOnRefreshListener {
                 callRefresh(it)
             }
