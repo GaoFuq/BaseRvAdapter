@@ -192,13 +192,14 @@ class RefreshHelper<DataBean>(
         }
 
         if (isAutoCreate) {
+            recyclerView.id = R.id.refresh_recycler_view
             smartRefreshLayout.addView(stateViewContainer, -1, -1)
             stateViewContainer.addView(recyclerView, -1, -1)
         }
 
         initStateView()
 
-        recyclerView.id = R.id.refresh_recycler_view
+
     }
 
     private fun initStateView() {
