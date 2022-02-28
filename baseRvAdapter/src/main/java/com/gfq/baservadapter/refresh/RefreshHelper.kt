@@ -6,91 +6,43 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
-import android.widget.RelativeLayout
+import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
-import androidx.core.view.children
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
+import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.gfq.baservadapter.BaseRVAdapter
 import com.gfq.baservadapter.R
-import com.scwang.smart.refresh.footer.BallPulseFooter
+import com.gfq.baservadapter.adapter.BaseRVAdapter
+import com.gfq.baservadapter.databinding.RefreshHelperLayoutBinding
 import com.scwang.smart.refresh.footer.ClassicsFooter
-import com.scwang.smart.refresh.header.ClassicsHeader
 import com.scwang.smart.refresh.header.MaterialHeader
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import com.scwang.smart.refresh.layout.api.RefreshLayout
 import com.scwang.smart.refresh.layout.constant.SpinnerStyle
+import androidx.fragment.app.FragmentActivity
 
 /**
- *  2021/5/10 11:07
- * @auth gaofuq
- * @description
- *
-<com.scwang.smart.refresh.layout.SmartRefreshLayout
-android:id="@+id/smartRefreshLayout"
-android:layout_width="match_parent"
-android:layout_height="match_parent">
-
-<RelativeLayout
-android:layout_width="match_parent"
-android:layout_height="match_parent">
-
-<androidx.recyclerview.widget.RecyclerView
-android:id="@+id/recyclerView"
-app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-android:layout_width="match_parent"
-android:layout_height="match_parent"/>
-
-</RelativeLayout>
-</com.scwang.smart.refresh.layout.SmartRefreshLayout>
-
-
-1.自己赋值
-RefreshHelper(
-context = this,
-smartRefreshLayout = binding.smartRefreshLayout,
-recyclerView = binding.recyclerView,
-adapter = adapter,
-requestData = { curPage, pageDataNumber, callback ->
-callback(getDataList(curPage, pageDataNumber))
-},
-onRefreshStateChange = {
-Log.e("xxxx", "onRefreshStateChange " + it.name)
-false
-}
-)
-
-2.代码自动创建
-createRefreshHelper<String>(
-context = this,
-itemLayoutId = R.layout.select_item,
-refreshContainerView = null,
-onAdapterBindView ={holder: BaseVH, data: String, position: Int ->
-
-},
-request = {curPage: Int, pageCount: Int, callback: (List<String>?) -> Unit ->
-
-},
-onRefreshStateChange = {
-false
-}
-) .also {
-//            it.smartRefreshLayout.
-//            it.recyclerView.
-//            it.adapter.
-//            it.
-}
+ * * 自动创建：[FragmentActivity.refreshHelperAutoCreate]。
+ * * 自动创建：[Fragment.refreshHelperAutoCreate]。
+ * * 手动创建：[FragmentActivity.refreshHelperNormalCreate]。
+ * * 手动创建：[Fragment.refreshHelperNormalCreate]。
+ * *
+ * * 自动创建的 RefreshHelper 才有 [topViewContainer],[bottomViewContainer]。
+ * * 自动创建的 RefreshHelper [stateViewLoadMoreNoMoreData] 才会生效。
  */
 class RefreshHelper<DataBean>(
     val activityOrFragment: Any,
-    val smartRefreshLayout: SmartRefreshLayout,
-    val recyclerView: RecyclerView,
     val adapter: BaseRVAdapter<DataBean>,
+    var smartRefreshLayout: SmartRefreshLayout? = null,
+    var recyclerView: RecyclerView? = null,
     /**
      * 当前页索引
      */
@@ -103,11 +55,6 @@ class RefreshHelper<DataBean>(
      * 总页数
      */
     private val totalPage: Int = 999,
-    val isAutoRefreshOnCreate: Boolean = true,
-    val isAutoRefreshOnResume: Boolean = false,
-    val isEnableRefresh: Boolean = true,
-    val isEnableLoadMore: Boolean = true,
-    private val isAutoCreate: Boolean = false,
     private val stateView: IStateView? = null,
     private val requestData: ((curPage: Int, pageDataCount: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
     /**
@@ -116,45 +63,70 @@ class RefreshHelper<DataBean>(
      */
     private val onStateChange: ((helper: RefreshHelper<DataBean>, state: State) -> Boolean)? = null,
 ) : LifecycleObserver {
+
     private val tag = "【RefreshHelper】"
+
+
     lateinit var context: Context
         private set
 
-    //无网络，无数据等视图显示的区域
-    lateinit var stateViewContainer: RelativeLayout
+    //recyclerView 的容器；无网络，无数据等视图显示的区域
+    lateinit var stateViewContainer: FrameLayout
         private set
 
-    private var state: State = State.IDLE
+    //在 recyclerView 上面的 view 容器
+    var topViewContainer: FrameLayout? = null
+        private set
 
-    var stateViewRefreshLoading: View? = null
-    var stateViewRefreshSuccess: View? = null
-    var stateViewRefreshError: View? = null
+    //在 recyclerView 下面的 view 容器
+    var bottomViewContainer: FrameLayout? = null
+        private set
 
-    var stateViewLoadMoreLoading: View? = null
-    var stateViewLoadMoreSuccess: View? = null
-    var stateViewLoadMoreError: View? = null
-
-    var stateViewEmptyData: View? = null
-    var stateViewEmptyDataWithRefresh: View? = null
-    var stateViewEmptyDataWithLoadMore: View? = null
-
-    var stateViewNetLose: View? = null
-
-
-    //recyclerView  的parentView 必须是 RelativeLayout
-    private fun checkStateViewContainer() {
-        if (isAutoCreate) {
-            stateViewContainer = RelativeLayout(context)
-        } else {
-            val parent = this.recyclerView.parent
-            if (parent != null && parent is RelativeLayout) {
-                stateViewContainer = parent
-            } else {
-                throw RuntimeException("recyclerView  的 parentView 必须是 RelativeLayout")
+    var isAutoRefreshOnCreate: Boolean = true
+        set(value) {
+            field = value
+            if(value){
+                isAutoRefreshOnResume = false
             }
         }
-    }
 
+    var isAutoRefreshOnResume: Boolean = false
+        set(value) {
+            field = value
+            if(value){
+                isAutoRefreshOnCreate = false
+            }
+        }
+
+    var isEnableRefresh: Boolean = true
+        set(value) {
+            field = value
+            smartRefreshLayout?.setEnableRefresh(value)
+        }
+
+    var isEnableLoadMore: Boolean = true
+        set(value) {
+            field = value
+            smartRefreshLayout?.setEnableLoadMore(value)
+        }
+
+    private var state: State = State.LOADING
+
+    //当前覆盖在 recyclerView 之上的view
+    private var coverView: View? = null
+
+    //覆盖 recyclerView 的状态view
+    var stateViewLoading: View? = null
+    var stateViewEmptyData: View? = null
+    var stateViewNetLose: View? = null
+    var stateViewError: View? = null
+
+    //加载更多，没有更多数据时，显示在最下方的view
+    var stateViewLoadMoreNoMoreData: View? = null
+        set(value) {
+            field = value
+            bottomViewContainer?.addView(value)
+        }
 
     init {
         if (activityOrFragment is ComponentActivity) {
@@ -167,24 +139,23 @@ class RefreshHelper<DataBean>(
             Log.d(tag, "init context is Fragment , tag = ${activityOrFragment.tag}")
         }
 
-        checkStateViewContainer()
+        autoCreateIfNeed()
 
-        recyclerView.visibility = View.VISIBLE
 
         if (adapter.recyclerView == null) {
             adapter.recyclerView = recyclerView
         }
 
-        if (recyclerView.layoutManager == null) {
-            recyclerView.layoutManager = LinearLayoutManager(context)
+        if (recyclerView?.layoutManager == null) {
+            recyclerView?.layoutManager = LinearLayoutManager(context)
         }
 
-        smartRefreshLayout.setEnableLoadMore(isEnableLoadMore)
-        smartRefreshLayout.setEnableRefresh(isEnableRefresh)
 
-        smartRefreshLayout.run {
+        smartRefreshLayout?.run {
+            setEnableLoadMore(isEnableLoadMore)
+            setEnableRefresh(isEnableRefresh)
             setRefreshHeader(MaterialHeader(context))
-            setRefreshFooter(BallPulseFooter(context).setSpinnerStyle(SpinnerStyle.FixedBehind))
+            setRefreshFooter(ClassicsFooter(context).setSpinnerStyle(SpinnerStyle.FixedBehind))
             setOnRefreshListener {
                 callRefresh(it)
             }
@@ -194,37 +165,48 @@ class RefreshHelper<DataBean>(
             }
         }
 
-        if (isAutoCreate) {
-            recyclerView.id = R.id.refresh_recycler_view
-            smartRefreshLayout.addView(stateViewContainer, -1, -1)
-            stateViewContainer.addView(recyclerView, -1, -1)
-        }
+
 
         initStateView()
 
 
     }
 
+    private fun autoCreateIfNeed() {
+        if (smartRefreshLayout == null) {
+            Log.d(tag,"auto create")
+            val binding =
+                DataBindingUtil.inflate<RefreshHelperLayoutBinding>(LayoutInflater.from(context),
+                    R.layout.refresh_helper_layout,
+                    null,
+                    false)
+            smartRefreshLayout = binding.smartRefreshLayout
+            recyclerView = binding.recyclerView
+            stateViewContainer = binding.stateViewContainer
+            topViewContainer = binding.topViewContainer
+            bottomViewContainer = binding.bottomViewContainer
+        } else {
+            Log.d(tag,"user xml create")
+            val parent = this.recyclerView?.parent
+            if (parent != null && parent is FrameLayout) {
+                stateViewContainer = parent
+            } else {
+                throw RuntimeException("recyclerView  的 parentView 必须是 FrameLayout")
+            }
+        }
+    }
+
+
     private fun initStateView() {
-        stateViewRefreshLoading = stateView?.refreshLoadingView(context, this)
-        stateViewRefreshSuccess = stateView?.refreshSuccessView(context, this)
-        stateViewRefreshError = stateView?.refreshErrorView(context, this)
-
-        stateViewLoadMoreLoading = stateView?.loadMoreLoadingView(context, this)
-        stateViewLoadMoreSuccess = stateView?.loadMoreSuccessView(context, this)
-        stateViewLoadMoreError = stateView?.loadMoreErrorView(context, this)
-
+        stateViewLoading = stateView?.loadingView(context, this)
         stateViewEmptyData = stateView?.emptyDataView(context, this)
-        stateViewEmptyDataWithRefresh = stateView?.emptyDataWithRefreshView(context, this)
-        stateViewEmptyDataWithLoadMore = stateView?.emptyDataWithLoadMoreView(context, this)
-
+        stateViewLoadMoreNoMoreData = stateView?.emptyDataWithLoadMoreView(context, this)
         stateViewNetLose = stateView?.netLoseView(context, this)
     }
 
 
     private fun callLoadMore(refreshLayout: RefreshLayout) {
         if (isNetworkConnected(context)) {
-            updateRefreshState(State.IDLE)
             doLoadMore(refreshLayout)
         } else {
             refreshLayout.finishLoadMore(false)
@@ -234,7 +216,6 @@ class RefreshHelper<DataBean>(
 
     private fun callRefresh(refreshLayout: RefreshLayout) {
         if (isNetworkConnected(context)) {
-            updateRefreshState(State.IDLE)
             doRefresh(refreshLayout)
         } else {
             refreshLayout.finishRefresh(false)
@@ -250,7 +231,6 @@ class RefreshHelper<DataBean>(
             return
         }
         if (requestData == null) return
-        updateRefreshState(State.LOAD_MORE_LOADING)
         try {
             requestData.invoke(currentPage, dataPerPage) {
                 when {
@@ -265,14 +245,13 @@ class RefreshHelper<DataBean>(
                     }
                     else -> {
                         adapter.addAll(it)
-                        updateRefreshState(State.LOAD_MORE_SUCCESS)
                         refreshLayout.finishLoadMore(true)
                     }
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            updateRefreshState(State.LOAD_MORE_ERROR)
+            updateRefreshState(State.ERROR)
             refreshLayout.finishLoadMore(false)
         }
     }
@@ -281,20 +260,17 @@ class RefreshHelper<DataBean>(
     private fun doRefresh(refreshLayout: RefreshLayout) {
         currentPage = 1
         if (requestData == null) return
-        updateRefreshState(State.REFRESH_LOADING)
+        updateRefreshState(State.LOADING)
         try {
             requestData.invoke(currentPage, dataPerPage) {
                 when {
                     it.isNullOrEmpty() -> {
                         if (adapter.dataList.isEmpty()) {
                             updateRefreshState(State.EMPTY_DATA)
-                        } else {
-                            updateRefreshState(State.EMPTY_DATA_WITH_REFRESH)
                         }
                         refreshLayout.finishRefreshWithNoMoreData()
                     }
                     else -> {
-                        updateRefreshState(State.REFRESH_SUCCESS)
                         adapter.dataList = it as MutableList<DataBean>
                         refreshLayout.finishRefresh(true)
                     }
@@ -302,7 +278,7 @@ class RefreshHelper<DataBean>(
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            updateRefreshState(State.REFRESH_ERROR)
+            updateRefreshState(State.ERROR)
             refreshLayout.finishRefresh(false)
         }
     }
@@ -311,45 +287,40 @@ class RefreshHelper<DataBean>(
     private fun updateRefreshState(state: State) {
         if (this.state == state) return
         this.state = state
-        Log.d(tag,"onStateChange state = "+state.name)
+        Log.d(tag, "onStateChange state = " + state.name)
         val intercept = onStateChange?.invoke(this, state)
         if (intercept == null || intercept == false) {
-            stateViewContainer.children.forEach {
-                if(it.id != R.id.refresh_recycler_view){
-                    stateViewContainer.removeView(it)
-                }
-            }
             when (state) {
-                State.IDLE ->{}
-                State.REFRESH_LOADING -> stateViewRefreshLoading?.let {
-                    stateViewContainer.addView(it,-1,-1)
-                }
-                State.REFRESH_SUCCESS -> stateViewRefreshSuccess?.let {
-                    stateViewContainer.addView(it,-1,-1)
-                }
-                State.REFRESH_ERROR -> stateViewRefreshError?.let {
-                    stateViewContainer.addView(it,-1,-1)
-                }
-                State.LOAD_MORE_LOADING -> stateViewLoadMoreLoading?.let {
-                    stateViewContainer.addView(it,-1,-1)
-                }
-                State.LOAD_MORE_SUCCESS -> stateViewLoadMoreSuccess?.let {
-                    stateViewContainer.addView(it,-1,-1)
-                }
-                State.LOAD_MORE_ERROR -> stateViewLoadMoreError?.let {
-                    stateViewContainer.addView(it,-1,-1)
+                State.LOADING -> stateViewLoading?.let {
+                    coverView = it
+                    stateViewContainer.addView(it)
+                    stateViewLoadMoreNoMoreData?.isGone = true
                 }
                 State.EMPTY_DATA -> stateViewEmptyData?.let {
-                    stateViewContainer.addView(it,-1,-1)
+                    coverView = it
+                    stateViewContainer.addView(it)
+                    stateViewLoadMoreNoMoreData?.isGone = true
                 }
-                State.EMPTY_DATA_WITH_LOAD_MORE -> stateViewEmptyDataWithLoadMore?.let {
-                    stateViewContainer.addView(it,-1,-1)
-                }
-                State.EMPTY_DATA_WITH_REFRESH -> stateViewEmptyDataWithRefresh?.let {
-                        stateViewContainer.addView(it,-1,-1)
-                    }
+
+                State.EMPTY_DATA_WITH_LOAD_MORE -> stateViewLoadMoreNoMoreData?.isVisible = true
+
                 State.NET_LOSE -> stateViewNetLose?.let {
-                    stateViewContainer.addView(it,-1,-1)
+                    coverView = it
+                    stateViewContainer.addView(it)
+                    stateViewLoadMoreNoMoreData?.isGone = true
+                }
+
+                State.ERROR -> stateViewError?.let {
+                    coverView = it
+                    stateViewContainer.addView(it)
+                    stateViewLoadMoreNoMoreData?.isGone = true
+                }
+
+                State.SHOW_CONTENT -> {
+                    coverView?.let {
+                        stateViewContainer.removeView(it)
+                    }
+                    stateViewLoadMoreNoMoreData?.isGone = true
                 }
             }
         }
@@ -401,7 +372,7 @@ class RefreshHelper<DataBean>(
     fun autoRefreshOnResume() {
         if (isAutoRefreshOnResume && isEnableLoadMore) {
             Log.d(tag, "autoRefreshOnResume")
-            callRefresh(smartRefreshLayout)
+            smartRefreshLayout?.let { callRefresh(it) }
         }
     }
 
@@ -409,7 +380,7 @@ class RefreshHelper<DataBean>(
     fun autoRefreshOnCreate() {
         if (isAutoRefreshOnCreate && isEnableRefresh) {
             Log.d(tag, "autoRefreshOnCreate")
-            callRefresh(smartRefreshLayout)
+            smartRefreshLayout?.let { callRefresh(it) }
         }
     }
 

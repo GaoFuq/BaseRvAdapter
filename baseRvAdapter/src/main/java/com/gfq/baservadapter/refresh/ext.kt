@@ -1,15 +1,12 @@
-package com.gfq.baservadapter
+package com.gfq.baservadapter.refresh
 
-import android.util.Log
 import android.view.ViewGroup
-import androidx.annotation.LayoutRes
 import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
-import com.gfq.baservadapter.refresh.IStateView
-import com.gfq.baservadapter.refresh.RefreshHelper
-import com.gfq.baservadapter.refresh.State
+import com.gfq.baservadapter.adapter.BaseRVAdapter
+import com.gfq.baservadapter.adapter.BaseVH
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
 
 
@@ -19,67 +16,119 @@ import com.scwang.smart.refresh.layout.SmartRefreshLayout
  * @description
  */
 /**
- * 继承 RVSelectBean 使其具有 select 属性
+ * 继承 RVSelectBean 使其具有 select , type 属性
+ * 继承 RVTypeBean 使其具有  viewType 属性
  */
-open class RVSelectBean(open var select: Boolean = false)
+open class RVSelectBean(open var select: Boolean = false) : RVTypeBean()
 
-data class ViewTypeWrapper(@LayoutRes val viewTypeLayout: Int, val viewType: Int)
+open class RVTypeBean(open val viewType: Int? = null)
 
 inline fun <reified T : ViewDataBinding> BaseVH.get(): T {
     return this.vhBinding as T
 }
 
 
-inline fun <reified T> FragmentActivity.createRefreshHelper(
+inline fun <reified T : RVTypeBean> FragmentActivity.refreshHelperAutoCreate(
     itemLayoutId: Int,
-    refreshContainerView: ViewGroup? = null,
+    containerView: ViewGroup,
     stateView: IStateView? = null,
-    crossinline onAdapterBindView: (holder: BaseVH, data: T, position: Int,adapter:BaseRVAdapter<T>) -> Unit,
+    dataPerPage: Int = 10,
+    crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
     noinline request: (curPage: Int, pageDataCount: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
     return RefreshHelper(
         activityOrFragment = this,
-        smartRefreshLayout = SmartRefreshLayout(this),
-        recyclerView = RecyclerView(this),
         adapter = object : BaseRVAdapter<T>(itemLayoutId) {
             override fun onBindView(holder: BaseVH, data: T, position: Int) {
-                onAdapterBindView(holder, data, position,this)
+                bindAdapterItemView(this, holder, data, position)
             }
         },
         requestData = request,
-        isAutoCreate = true,
         stateView = stateView,
+        dataPerPage = dataPerPage,
         onStateChange = onStateChange
     ).apply {
-        refreshContainerView?.addView(smartRefreshLayout)
+        containerView.addView(smartRefreshLayout)
     }
 }
 
 
-inline fun <reified T> Fragment.createRefreshHelper(
+inline fun <reified T : RVTypeBean> Fragment.refreshHelperAutoCreate(
     itemLayoutId: Int,
-    refreshContainerView: ViewGroup? = null,
+    containerView: ViewGroup,
     stateView: IStateView? = null,
-    crossinline onAdapterBindView: (holder: BaseVH, data: T, position: Int,adapter:BaseRVAdapter<T>) -> Unit,
+    dataPerPage: Int = 10,
+    crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
     noinline request: (curPage: Int, pageDataCount: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
-    ): RefreshHelper<T> {
+): RefreshHelper<T> {
     return RefreshHelper(
         activityOrFragment = this,
-        smartRefreshLayout = SmartRefreshLayout(context),
-        recyclerView = RecyclerView(context!!),
         adapter = object : BaseRVAdapter<T>(itemLayoutId) {
             override fun onBindView(holder: BaseVH, data: T, position: Int) {
-                onAdapterBindView(holder, data, position,this)
+                bindAdapterItemView(this, holder, data, position)
             }
         },
         requestData = request,
-        onStateChange = onStateChange,
         stateView = stateView,
-        isAutoCreate = true
+        dataPerPage = dataPerPage,
+        onStateChange = onStateChange
     ).apply {
-        refreshContainerView?.addView(smartRefreshLayout)
+        containerView.addView(smartRefreshLayout)
     }
 }
 
+
+inline fun <reified T : RVTypeBean> FragmentActivity.refreshHelperNormalCreate(
+    itemLayoutId: Int,
+    smartRefreshLayout: SmartRefreshLayout,
+    recyclerView: RecyclerView,
+    stateView: IStateView? = null,
+    dataPerPage: Int = 10,
+    crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
+    noinline request: (curPage: Int, pageDataCount: Int, callback: (List<T>?) -> Unit) -> Unit,
+    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
+): RefreshHelper<T> {
+    return RefreshHelper(
+        activityOrFragment = this,
+        smartRefreshLayout=smartRefreshLayout,
+        recyclerView=recyclerView,
+        adapter = object : BaseRVAdapter<T>(itemLayoutId) {
+            override fun onBindView(holder: BaseVH, data: T, position: Int) {
+                bindAdapterItemView(this, holder, data, position)
+            }
+        },
+        requestData = request,
+        stateView = stateView,
+        dataPerPage = dataPerPage,
+        onStateChange = onStateChange
+    )
+}
+
+
+inline fun <reified T : RVTypeBean> Fragment.refreshHelperNormalCreate(
+    itemLayoutId: Int,
+    smartRefreshLayout: SmartRefreshLayout,
+    recyclerView: RecyclerView,
+    stateView: IStateView? = null,
+    dataPerPage: Int = 10,
+    crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
+    noinline request: (curPage: Int, pageDataCount: Int, callback: (List<T>?) -> Unit) -> Unit,
+    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
+): RefreshHelper<T> {
+    return RefreshHelper(
+        activityOrFragment = this,
+        smartRefreshLayout=smartRefreshLayout,
+        recyclerView=recyclerView,
+        adapter = object : BaseRVAdapter<T>(itemLayoutId) {
+            override fun onBindView(holder: BaseVH, data: T, position: Int) {
+                bindAdapterItemView(this, holder, data, position)
+            }
+        },
+        requestData = request,
+        stateView = stateView,
+        dataPerPage = dataPerPage,
+        onStateChange = onStateChange
+    )
+}

@@ -10,22 +10,12 @@ import android.view.View
  * @description
  */
 interface  IStateView {
-    fun refreshLoadingView(context: Context, helper: RefreshHelper<*>): View?=null
-    fun refreshSuccessView(context: Context, helper: RefreshHelper<*>): View?=null
-    fun refreshErrorView(context: Context, helper: RefreshHelper<*>): View?=null
-
-    fun loadMoreLoadingView(context: Context, helper: RefreshHelper<*>): View?=null
-    fun loadMoreSuccessView(context: Context, helper: RefreshHelper<*>): View?=null
-    fun loadMoreErrorView(context: Context, helper: RefreshHelper<*>): View?=null
+    fun loadingView(context: Context, helper: RefreshHelper<*>): View?=null
 
     /**
      * 列表没有数据时显示的View
      */
     fun emptyDataView(context: Context, helper: RefreshHelper<*>): View?=null
-    /**
-     * 当前刷新请求返回的数据为null或empty时显示的View
-     */
-    fun emptyDataWithRefreshView(context: Context, helper: RefreshHelper<*>): View?=null
     /**
      * 当前加载更多请求返回的数据为null或empty时显示的View
      */

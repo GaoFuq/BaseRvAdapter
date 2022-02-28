@@ -1,54 +1,30 @@
 package com.gfq.baservadapter.simple
 
+/*internal data class Xxx(val name:String):RVTypeBean()
 
-/**
-class MainActivity : BaseActivity<ActivityMainBinding>() {
+internal class MainActivity : BaseActivity<SelectItemBinding>() {
 
-    override fun layout(): Int = R.layout.activity_main
+    override fun layout(): Int = R.layout.select_item
 
     override fun initView() {
 
-        val adapter = object : BaseRVAdapter<TestBean>(R.layout.select_item) {
-            override fun onBindView(holder: BaseVH, data: TestBean, position: Int) {
-                holder.get<SelectItemBinding>().run {
-                    textView.text = data.name
-                    tvDelete.setOnClickListener {
-                        doSingleSelect(holder,position)
-                    }
+       val adapter = object :BaseRVTypeAdapter<Xxx>(mapOf(
+           1 to R.layout.select_item,
+           2 to 3
+       )){
+           override fun onBindViewByViewType(
+               holder: BaseVH,
+               data: Xxx,
+               position: Int,
+               viewType: Int,
+           ) {
+                when(viewType){
+                    1->{}
+                    2->{}
                 }
-            }
+           }
 
-            override fun onItemSelected(holder: BaseVH, data: TestBean, position: Int) {
-                holder.get<SelectItemBinding>().run {
-                    textView.setTextColor(Color.RED)
-                }
-            }
-
-            override fun onItemNotSelect(holder: BaseVH, data: TestBean, position: Int) {
-                holder.get<SelectItemBinding>().run {
-                    textView.setTextColor(Color.GREEN)
-                }
-            }
-
-            override fun onItemReSelect(holder: BaseVH, data: TestBean, position: Int) {
-                holder.get<SelectItemBinding>().run {
-                    textView.setTextColor(Color.WHITE)
-                }
-            }
-        }
-        RefreshHelper(
-            context = this,
-            smartRefreshLayout = binding.smartRefreshLayout,
-            recyclerView = binding.recyclerView,
-            adapter = adapter,
-            requestData = { curPage, pageDataNumber, callback ->
-                callback(getDataList(curPage, pageDataNumber))
-            },
-            onRefreshStateChange = {
-                Log.e("xxxx", "onRefreshStateChange " + it.name)
-                false
-            }
-        )
+       }
     }
 
     private fun getDataList(curPage: Int, pageDataNumber: Int): List<TestBean>? {

@@ -1,4 +1,4 @@
-package com.gfq.baservadapter
+package com.gfq.baservadapter.adapter
 
 import android.annotation.SuppressLint
 import android.util.Log
@@ -8,6 +8,7 @@ import androidx.annotation.LayoutRes
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.gfq.baservadapter.refresh.RVSelectBean
 
 
 /**
@@ -15,10 +16,8 @@ import androidx.recyclerview.widget.SimpleItemAnimator
  * @auth gaofuq
  * @description
  */
-abstract class BaseRVAdapter<DataBean>(
-    @LayoutRes private val itemLayoutRes: Int,
-    private val viewTypeWrappers: List<ViewTypeWrapper>? = null,
-) : RecyclerView.Adapter<BaseVH>() {
+abstract class BaseRVAdapter<DataBean>
+    (@LayoutRes private val itemLayoutRes: Int) : RecyclerView.Adapter<BaseVH>() {
 
     var recyclerView: RecyclerView? = null
         set(value) {
@@ -39,70 +38,41 @@ abstract class BaseRVAdapter<DataBean>(
         }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BaseVH {
-        if (viewTypeWrappers != null) {
-            viewTypeWrappers.forEach {
-                if (viewType == it.viewType) {
-                    return BaseVH(
-                        DataBindingUtil.inflate(
-                            LayoutInflater.from(parent.context),
-                            it.viewTypeLayout,
-                            parent,
-                            false
-                        )
-                    )
-                }
-            }
-            throw RuntimeException("useViewType == true ,but can not impl")
-        } else {
-            return BaseVH(
-                DataBindingUtil.inflate(
-                    LayoutInflater.from(parent.context),
-                    itemLayoutRes,
-                    parent,
-                    false
-                )
+        return BaseVH(
+            DataBindingUtil.inflate(
+                LayoutInflater.from(parent.context),
+                itemLayoutRes,
+                parent,
+                false
             )
-        }
+        )
     }
 
 
     override fun onBindViewHolder(holder: BaseVH, position: Int) {
-        if (viewTypeWrappers != null) {
-            onBindViewByViewType(holder, dataList[position], position, viewTypeWrappers)
-        } else {
-            try {
-                holder.vhBinding.executePendingBindings()
-                onBindView(holder, dataList[position], position)
+        try {
+            holder.vhBinding.executePendingBindings()
+            onBindView(holder, dataList[position], position)
 
-                if (dataList[position] is RVSelectBean) {
-                    val data = dataList[position] as RVSelectBean
-                    if (data.select) {
-                        onItemSelected(holder, dataList[position], position)
-                    } else {
-                        onItemNotSelect(holder, dataList[position], position)
-                    }
+            if (dataList[position] is RVSelectBean) {
+                val data = dataList[position] as RVSelectBean
+                if (data.select) {
+                    onItemSelected(holder, dataList[position], position)
+                } else {
+                    onItemNotSelect(holder, dataList[position], position)
                 }
-            } catch (e: Exception) {
-                Log.e("【BaseRVAdapter】", "onBindViewHolder error ${e.message}")
             }
+        } catch (e: Exception) {
+            Log.e("【BaseRVAdapter】", "onBindViewHolder error ${e.message}")
         }
+
     }
 
     override fun onBindViewHolder(holder: BaseVH, position: Int, payloads: MutableList<Any>) {
         super.onBindViewHolder(holder, position, payloads)
     }
 
-    /**
-     * 多item布局时，重写该方法
-     */
-    open fun onBindViewByViewType(
-        holder: BaseVH,
-        data: DataBean,
-        position: Int,
-        viewTypeWrappers: List<ViewTypeWrapper>,
-    ) {
 
-    }
 
     var lastSelectedPosition = -1
         private set
@@ -223,7 +193,7 @@ abstract class BaseRVAdapter<DataBean>(
     }
 
 
-    private fun whenPositionLegit(position: Int, block: () -> Unit) {
+    protected fun whenPositionLegit(position: Int, block: () -> Unit) {
         if (position >= 0 && position < dataList.size) {
             block()
         } else {
@@ -231,7 +201,7 @@ abstract class BaseRVAdapter<DataBean>(
         }
     }
 
-    private fun whenAddDataPositionLegit(position: Int, block: () -> Unit) {
+    protected fun whenAddDataPositionLegit(position: Int, block: () -> Unit) {
         if (position >= 0 && position <= dataList.size) {
             block()
         } else {
@@ -240,7 +210,7 @@ abstract class BaseRVAdapter<DataBean>(
     }
 
 
-    private fun whenDataIsRVSelectBean(data: DataBean, block: (RVSelectBean) -> Unit) {
+    protected fun whenDataIsRVSelectBean(data: DataBean, block: (RVSelectBean) -> Unit) {
         if (data is RVSelectBean) {
             block(data as RVSelectBean)
         } else {
@@ -270,8 +240,8 @@ abstract class BaseRVAdapter<DataBean>(
         }
     }
 
-    fun setData(position: Int,data: DataBean){
-        whenPositionLegit(position){
+    fun setData(position: Int, data: DataBean) {
+        whenPositionLegit(position) {
             dataList[position] = data
             notifyItemChanged(position)
         }
@@ -317,14 +287,6 @@ abstract class BaseRVAdapter<DataBean>(
 
     override fun getItemCount(): Int = dataList.size
 
-
-    override fun getItemViewType(position: Int): Int {
-        return if (viewTypeWrappers != null) {
-            viewTypeWrappers[position].viewTypeLayout
-        } else {
-            super.getItemViewType(position)
-        }
-    }
 
 
     open fun onItemSelected(holder: BaseVH, data: DataBean, position: Int) {}

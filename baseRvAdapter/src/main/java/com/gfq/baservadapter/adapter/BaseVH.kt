@@ -1,4 +1,4 @@
-package com.gfq.baservadapter
+package com.gfq.baservadapter.adapter
 
 import androidx.databinding.ViewDataBinding
 import androidx.recyclerview.widget.RecyclerView
