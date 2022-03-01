@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <data>
 
@@ -11,43 +12,43 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <androidx.core.widget.NestedScrollView
-            android:id="@+id/nestedScrollView"
+        <FrameLayout
+            android:id="@+id/stateViewContainer"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            tools:background="#333">
 
-            <LinearLayout
-                android:id="@+id/linearLayout"
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/nestedScrollView"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:layout_height="wrap_content"
+                tools:background="#666">
 
-                <FrameLayout
-                    android:id="@+id/topViewContainer"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
-                <FrameLayout
-                    android:id="@+id/stateViewContainer"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    <FrameLayout
+                        android:id="@+id/topViewContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recyclerView"
-                        android:overScrollMode="never"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                         />
-                </FrameLayout>
+                        android:overScrollMode="never" />
 
-                <FrameLayout
-                    android:id="@+id/bottomViewContainer"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    />
+                    <FrameLayout
+                        android:id="@+id/bottomViewContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
 
-            </LinearLayout>
+                </LinearLayout>
 
-        </androidx.core.widget.NestedScrollView>
+            </androidx.core.widget.NestedScrollView>
+        </FrameLayout>
+
     </com.scwang.smart.refresh.layout.SmartRefreshLayout>
 </layout>

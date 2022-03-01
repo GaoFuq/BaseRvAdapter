@@ -128,6 +128,7 @@ class RefreshHelper<DataBean>(
             field = value
             if (value != null) {
                 bottomViewContainer?.addView(value)
+                value.isGone = true
             }
         }
 
@@ -293,16 +294,21 @@ class RefreshHelper<DataBean>(
         Log.d(tag, "onStateChange state = " + state.name)
         val intercept = onStateChange?.invoke(this, state)
         if (intercept == null || intercept == false) {
+            //重置view
+            stateViewLoadMoreNoMoreData?.isGone = true
+            coverView?.let {
+                stateViewContainer.removeView(it)
+                coverView = null
+            }
+            //默认处理
             when (state) {
                 State.LOADING -> stateViewLoading?.let {
                     coverView = it
                     stateViewContainer.addView(it)
-                    stateViewLoadMoreNoMoreData?.isGone = true
                 }
                 State.EMPTY_DATA -> stateViewEmptyData?.let {
                     coverView = it
                     stateViewContainer.addView(it)
-                    stateViewLoadMoreNoMoreData?.isGone = true
                 }
 
                 State.EMPTY_DATA_WITH_LOAD_MORE -> stateViewLoadMoreNoMoreData?.isVisible = true
@@ -310,20 +316,11 @@ class RefreshHelper<DataBean>(
                 State.NET_LOSE -> stateViewNetLose?.let {
                     coverView = it
                     stateViewContainer.addView(it)
-                    stateViewLoadMoreNoMoreData?.isGone = true
                 }
 
                 State.ERROR -> stateViewError?.let {
                     coverView = it
                     stateViewContainer.addView(it)
-                    stateViewLoadMoreNoMoreData?.isGone = true
-                }
-
-                State.SHOW_CONTENT -> {
-                    coverView?.let {
-                        stateViewContainer.removeView(it)
-                    }
-                    stateViewLoadMoreNoMoreData?.isGone = true
                 }
             }
         }

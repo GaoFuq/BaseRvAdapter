@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.View
 
 enum class State{
-        SHOW_CONTENT,
         LOADING ,
 
         ERROR,
