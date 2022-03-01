@@ -30,6 +30,7 @@ import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 import androidx.fragment.app.FragmentActivity
 
 /**
+ * * 自动创建布局：[R.layout.refresh_helper_layout]
  * * 自动创建：[FragmentActivity.refreshHelperAutoCreate]。
  * * 自动创建：[Fragment.refreshHelperAutoCreate]。
  * * 手动创建：[FragmentActivity.refreshHelperNormalCreate]。
@@ -85,7 +86,7 @@ class RefreshHelper<DataBean>(
     var isAutoRefreshOnCreate: Boolean = true
         set(value) {
             field = value
-            if(value){
+            if (value) {
                 isAutoRefreshOnResume = false
             }
         }
@@ -93,7 +94,7 @@ class RefreshHelper<DataBean>(
     var isAutoRefreshOnResume: Boolean = false
         set(value) {
             field = value
-            if(value){
+            if (value) {
                 isAutoRefreshOnCreate = false
             }
         }
@@ -125,7 +126,9 @@ class RefreshHelper<DataBean>(
     var stateViewLoadMoreNoMoreData: View? = null
         set(value) {
             field = value
-            bottomViewContainer?.addView(value)
+            if (value != null) {
+                bottomViewContainer?.addView(value)
+            }
         }
 
     init {
@@ -174,7 +177,7 @@ class RefreshHelper<DataBean>(
 
     private fun autoCreateIfNeed() {
         if (smartRefreshLayout == null) {
-            Log.d(tag,"auto create")
+            Log.d(tag, "auto create")
             val binding =
                 DataBindingUtil.inflate<RefreshHelperLayoutBinding>(LayoutInflater.from(context),
                     R.layout.refresh_helper_layout,
@@ -186,7 +189,7 @@ class RefreshHelper<DataBean>(
             topViewContainer = binding.topViewContainer
             bottomViewContainer = binding.bottomViewContainer
         } else {
-            Log.d(tag,"user xml create")
+            Log.d(tag, "user xml create")
             val parent = this.recyclerView?.parent
             if (parent != null && parent is FrameLayout) {
                 stateViewContainer = parent

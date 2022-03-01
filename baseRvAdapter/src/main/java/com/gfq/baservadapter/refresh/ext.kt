@@ -28,7 +28,7 @@ inline fun <reified T : ViewDataBinding> BaseVH.get(): T {
 }
 
 
-inline fun <reified T : RVTypeBean> FragmentActivity.refreshHelperAutoCreate(
+inline fun <reified T : RVSelectBean> FragmentActivity.refreshHelperAutoCreate(
     itemLayoutId: Int,
     containerView: ViewGroup,
     stateView: IStateView? = null,
@@ -54,7 +54,7 @@ inline fun <reified T : RVTypeBean> FragmentActivity.refreshHelperAutoCreate(
 }
 
 
-inline fun <reified T : RVTypeBean> Fragment.refreshHelperAutoCreate(
+inline fun <reified T : RVSelectBean> Fragment.refreshHelperAutoCreate(
     itemLayoutId: Int,
     containerView: ViewGroup,
     stateView: IStateView? = null,
@@ -80,7 +80,7 @@ inline fun <reified T : RVTypeBean> Fragment.refreshHelperAutoCreate(
 }
 
 
-inline fun <reified T : RVTypeBean> FragmentActivity.refreshHelperNormalCreate(
+inline fun <reified T : RVSelectBean> FragmentActivity.refreshHelperNormalCreate(
     itemLayoutId: Int,
     smartRefreshLayout: SmartRefreshLayout,
     recyclerView: RecyclerView,
@@ -107,7 +107,7 @@ inline fun <reified T : RVTypeBean> FragmentActivity.refreshHelperNormalCreate(
 }
 
 
-inline fun <reified T : RVTypeBean> Fragment.refreshHelperNormalCreate(
+inline fun <reified T : RVSelectBean> Fragment.refreshHelperNormalCreate(
     itemLayoutId: Int,
     smartRefreshLayout: SmartRefreshLayout,
     recyclerView: RecyclerView,
