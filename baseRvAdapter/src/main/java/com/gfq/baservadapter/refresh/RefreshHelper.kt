@@ -248,7 +248,7 @@ class RefreshHelper<DataBean>(
                         refreshLayout.finishLoadMoreWithNoMoreData()
                     }
                     else -> {
-                        adapter.addAll(it)
+                        adapter.addAll(it.toMutableList())
                         refreshLayout.finishLoadMore(true)
                     }
                 }
@@ -275,7 +275,7 @@ class RefreshHelper<DataBean>(
                         refreshLayout.finishRefreshWithNoMoreData()
                     }
                     else -> {
-                        adapter.dataList = it as MutableList<DataBean>
+                        adapter.dataList = it.toMutableList()
                         refreshLayout.finishRefresh(true)
                     }
                 }

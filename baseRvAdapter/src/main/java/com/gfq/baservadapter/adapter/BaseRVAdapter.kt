@@ -227,7 +227,7 @@ abstract class BaseRVAdapter<DataBean>
     fun getSingleSelectData(): DataBean? =
         dataList.firstOrNull { (it is RVSelectBean && it.select) }
 
-    fun addAll(list: List<DataBean>, positionStart: Int = -1) {
+    fun addAll(list: Collection<DataBean>, positionStart: Int = -1) {
         val posStart = if (positionStart < 0) {
             dataList.size
         } else {
