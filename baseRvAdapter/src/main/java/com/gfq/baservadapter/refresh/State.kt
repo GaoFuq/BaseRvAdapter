@@ -6,6 +6,9 @@ import android.view.View
 enum class State{
         LOADING ,
 
+        REFRESH_SUCCESS,
+        LOAD_MORE_SUCCESS,
+
         ERROR,
         /**
          * 列表没有数据
@@ -14,7 +17,7 @@ enum class State{
         /**
          * 当前加载更多请求返回的数据为null或empty
          */
-        EMPTY_DATA_WITH_LOAD_MORE,
+        NO_MORE_DATA,
 
         NET_LOSE,
     }

@@ -38,8 +38,9 @@ import androidx.fragment.app.FragmentActivity
  * *
  * * 自动创建的 RefreshHelper 才有 [topViewContainer],[bottomViewContainer]。
  * * 自动创建的 RefreshHelper [stateViewLoadMoreNoMoreData] 才会生效。
+ * * 可以通过继承，重写[loadMore],[refresh]。
  */
-class RefreshHelper<DataBean>(
+open class RefreshHelper<DataBean>(
     val activityOrFragment: Any,
     val adapter: BaseRVAdapter<DataBean>,
     var smartRefreshLayout: SmartRefreshLayout? = null,
@@ -231,28 +232,13 @@ class RefreshHelper<DataBean>(
         currentPage++
         if (currentPage > totalPage) {
             currentPage = totalPage
+            updateRefreshState(State.NO_MORE_DATA)
             refreshLayout.finishLoadMoreWithNoMoreData()
             return
         }
         if (requestData == null) return
         try {
-            requestData.invoke(currentPage, dataPerPage) {
-                when {
-                    it.isNullOrEmpty() -> {
-                        currentPage--
-                        if (adapter.dataList.isEmpty()) {
-                            updateRefreshState(State.EMPTY_DATA)
-                        } else {
-                            updateRefreshState(State.EMPTY_DATA_WITH_LOAD_MORE)
-                        }
-                        refreshLayout.finishLoadMoreWithNoMoreData()
-                    }
-                    else -> {
-                        adapter.addAll(it.toMutableList())
-                        refreshLayout.finishLoadMore(true)
-                    }
-                }
-            }
+            loadMore(refreshLayout)
         } catch (e: Exception) {
             e.printStackTrace()
             updateRefreshState(State.ERROR)
@@ -260,26 +246,44 @@ class RefreshHelper<DataBean>(
         }
     }
 
+    /**
+     * 可通过继承，自己实现逻辑
+     */
+    open fun loadMore(refreshLayout: RefreshLayout) {
+        requestData?.invoke(currentPage, dataPerPage) {
+            when {
+                it.isNullOrEmpty() -> {
+                    currentPage--
+                    if (adapter.dataList.isEmpty()) {
+                        updateRefreshState(State.EMPTY_DATA)
+                        refreshLayout.finishLoadMore(true)
+                    } else {
+                        updateRefreshState(State.NO_MORE_DATA)
+                        refreshLayout.finishLoadMoreWithNoMoreData()
+                    }
+                }
+                else -> {
+                    if (it.size == dataPerPage) {
+                        updateRefreshState(State.LOAD_MORE_SUCCESS)
+                        adapter.addAll(it.toMutableList())
+                        refreshLayout.finishLoadMore(true)
+                    } else if (it.size < dataPerPage) {
+                        updateRefreshState(State.NO_MORE_DATA)
+                        adapter.addAll(it.toMutableList())
+                        refreshLayout.finishLoadMoreWithNoMoreData()
+                    }
+
+                }
+            }
+        }
+    }
 
     private fun doRefresh(refreshLayout: RefreshLayout) {
         currentPage = 1
         if (requestData == null) return
         updateRefreshState(State.LOADING)
         try {
-            requestData.invoke(currentPage, dataPerPage) {
-                when {
-                    it.isNullOrEmpty() -> {
-                        if (adapter.dataList.isEmpty()) {
-                            updateRefreshState(State.EMPTY_DATA)
-                        }
-                        refreshLayout.finishRefreshWithNoMoreData()
-                    }
-                    else -> {
-                        adapter.dataList = it.toMutableList()
-                        refreshLayout.finishRefresh(true)
-                    }
-                }
-            }
+            refresh(refreshLayout)
         } catch (e: Exception) {
             e.printStackTrace()
             updateRefreshState(State.ERROR)
@@ -287,6 +291,32 @@ class RefreshHelper<DataBean>(
         }
     }
 
+    /**
+     * 可通过继承，自己实现逻辑
+     */
+    open fun refresh(refreshLayout: RefreshLayout){
+        requestData?.invoke(currentPage, dataPerPage) {
+            when {
+                it.isNullOrEmpty() -> {
+                    if (adapter.dataList.isEmpty()) {
+                        updateRefreshState(State.EMPTY_DATA)
+                    } else {
+                        updateRefreshState(State.NO_MORE_DATA)
+                    }
+                    refreshLayout.finishRefresh(true)
+                }
+                else -> {
+                    if (it.size == dataPerPage) {
+                        updateRefreshState(State.REFRESH_SUCCESS)
+                    } else if (it.size < dataPerPage) {
+                        updateRefreshState(State.NO_MORE_DATA)
+                    }
+                    adapter.dataList = it.toMutableList()
+                    refreshLayout.finishRefresh(true)
+                }
+            }
+        }
+    }
 
     private fun updateRefreshState(state: State) {
         if (this.state == state) return
@@ -294,8 +324,6 @@ class RefreshHelper<DataBean>(
         Log.d(tag, "onStateChange state = " + state.name)
         val intercept = onStateChange?.invoke(this, state)
         if (intercept == null || intercept == false) {
-            //重置view
-            stateViewLoadMoreNoMoreData?.isGone = true
             coverView?.let {
                 stateViewContainer.removeView(it)
                 coverView = null
@@ -311,7 +339,9 @@ class RefreshHelper<DataBean>(
                     stateViewContainer.addView(it)
                 }
 
-                State.EMPTY_DATA_WITH_LOAD_MORE -> stateViewLoadMoreNoMoreData?.isVisible = true
+                State.NO_MORE_DATA -> stateViewLoadMoreNoMoreData?.isVisible = true
+                State.REFRESH_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
+                State.LOAD_MORE_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
 
                 State.NET_LOSE -> stateViewNetLose?.let {
                     coverView = it
@@ -322,6 +352,7 @@ class RefreshHelper<DataBean>(
                     coverView = it
                     stateViewContainer.addView(it)
                 }
+
             }
         }
     }
