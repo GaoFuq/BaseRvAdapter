@@ -8,7 +8,7 @@ import androidx.annotation.LayoutRes
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
-import com.gfq.baservadapter.refresh.RVSelectBean
+import com.gfq.baservadapter.refresh.RVSelect
 
 
 /**
@@ -54,8 +54,8 @@ abstract class BaseRVAdapter<DataBean>
             holder.vhBinding.executePendingBindings()
             onBindView(holder, dataList[position], position)
 
-            if (dataList[position] is RVSelectBean) {
-                val data = dataList[position] as RVSelectBean
+            if (dataList[position] is RVSelect) {
+                val data = dataList[position] as RVSelect
                 if (data.select) {
                     onItemSelected(holder, dataList[position], position)
                 } else {
@@ -210,9 +210,9 @@ abstract class BaseRVAdapter<DataBean>
     }
 
 
-    protected fun whenDataIsRVSelectBean(data: DataBean, block: (RVSelectBean) -> Unit) {
-        if (data is RVSelectBean) {
-            block(data as RVSelectBean)
+    protected fun whenDataIsRVSelectBean(data: DataBean, block: (RVSelect) -> Unit) {
+        if (data is RVSelect) {
+            block(data as RVSelect)
         } else {
             Log.e("【BaseRVAdapter】", "${data!!::class.java.name} require extends RVSelectBean")
         }
@@ -222,10 +222,10 @@ abstract class BaseRVAdapter<DataBean>
     fun getMultipleSelectedCount() = getMultipleSelectDataList().count()
 
     fun getMultipleSelectDataList(): List<DataBean> =
-        dataList.filter { (it is RVSelectBean && it.select) }
+        dataList.filter { (it is RVSelect && it.select) }
 
     fun getSingleSelectData(): DataBean? =
-        dataList.firstOrNull { (it is RVSelectBean && it.select) }
+        dataList.firstOrNull { (it is RVSelect && it.select) }
 
     fun addAll(list: Collection<DataBean>, positionStart: Int = -1) {
         val posStart = if (positionStart < 0) {

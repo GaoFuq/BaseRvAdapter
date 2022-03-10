@@ -3,7 +3,7 @@ package com.gfq.baservadapter.adapter
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
-import com.gfq.baservadapter.refresh.RVTypeBean
+import com.gfq.baservadapter.refresh.RVType
 import java.lang.RuntimeException
 
 /**
@@ -11,7 +11,7 @@ import java.lang.RuntimeException
  * @auth gaofuq
  * @description
  */
-abstract class BaseRVTypeAdapter<DataBean : RVTypeBean>(
+abstract class BaseRVTypeAdapter<DataBean : RVType>(
     /**
      * * key : viewType
      * * value : itemLayoutResId

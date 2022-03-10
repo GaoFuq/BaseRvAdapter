@@ -19,16 +19,20 @@ import com.scwang.smart.refresh.layout.SmartRefreshLayout
  * 继承 RVSelectBean 使其具有 select , type 属性
  * 继承 RVTypeBean 使其具有  viewType 属性
  */
-open class RVSelectBean(open var select: Boolean = false) : RVTypeBean()
+interface RVSelect {
+    var select: Boolean
+}
 
-open class RVTypeBean(open val viewType: Int? = null)
+interface RVType {
+    var viewType: Int?
+}
 
 inline fun <reified T : ViewDataBinding> BaseVH.get(): T {
     return this.vhBinding as T
 }
 
 
-inline fun <reified T : RVSelectBean> FragmentActivity.refreshHelperAutoCreate(
+inline fun <reified T : RVSelect> FragmentActivity.refreshHelperAutoCreate(
     itemLayoutId: Int,
     containerView: ViewGroup,
     stateView: IStateView? = null,
@@ -49,12 +53,12 @@ inline fun <reified T : RVSelectBean> FragmentActivity.refreshHelperAutoCreate(
         dataPerPage = dataPerPage,
         onStateChange = onStateChange
     ).apply {
-        containerView.addView(smartRefreshLayout)
+        containerView.addView(smartRefreshLayout, -1, -1)
     }
 }
 
 
-inline fun <reified T : RVSelectBean> Fragment.refreshHelperAutoCreate(
+inline fun <reified T : RVSelect> Fragment.refreshHelperAutoCreate(
     itemLayoutId: Int,
     containerView: ViewGroup,
     stateView: IStateView? = null,
@@ -75,12 +79,12 @@ inline fun <reified T : RVSelectBean> Fragment.refreshHelperAutoCreate(
         dataPerPage = dataPerPage,
         onStateChange = onStateChange
     ).apply {
-        containerView.addView(smartRefreshLayout)
+        containerView.addView(smartRefreshLayout, -1, -1)
     }
 }
 
 
-inline fun <reified T : RVSelectBean> FragmentActivity.refreshHelperNormalCreate(
+inline fun <reified T : RVSelect> FragmentActivity.refreshHelperNormalCreate(
     itemLayoutId: Int,
     smartRefreshLayout: SmartRefreshLayout,
     recyclerView: RecyclerView,
@@ -92,8 +96,8 @@ inline fun <reified T : RVSelectBean> FragmentActivity.refreshHelperNormalCreate
 ): RefreshHelper<T> {
     return RefreshHelper(
         activityOrFragment = this,
-        smartRefreshLayout=smartRefreshLayout,
-        recyclerView=recyclerView,
+        smartRefreshLayout = smartRefreshLayout,
+        recyclerView = recyclerView,
         adapter = object : BaseRVAdapter<T>(itemLayoutId) {
             override fun onBindView(holder: BaseVH, data: T, position: Int) {
                 bindAdapterItemView(this, holder, data, position)
@@ -107,7 +111,7 @@ inline fun <reified T : RVSelectBean> FragmentActivity.refreshHelperNormalCreate
 }
 
 
-inline fun <reified T : RVSelectBean> Fragment.refreshHelperNormalCreate(
+inline fun <reified T : RVSelect> Fragment.refreshHelperNormalCreate(
     itemLayoutId: Int,
     smartRefreshLayout: SmartRefreshLayout,
     recyclerView: RecyclerView,
@@ -119,8 +123,8 @@ inline fun <reified T : RVSelectBean> Fragment.refreshHelperNormalCreate(
 ): RefreshHelper<T> {
     return RefreshHelper(
         activityOrFragment = this,
-        smartRefreshLayout=smartRefreshLayout,
-        recyclerView=recyclerView,
+        smartRefreshLayout = smartRefreshLayout,
+        recyclerView = recyclerView,
         adapter = object : BaseRVAdapter<T>(itemLayoutId) {
             override fun onBindView(holder: BaseVH, data: T, position: Int) {
                 bindAdapterItemView(this, holder, data, position)

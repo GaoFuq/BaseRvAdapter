@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
@@ -85,20 +86,8 @@ open class RefreshHelper<DataBean>(
         private set
 
     var isAutoRefreshOnCreate: Boolean = true
-        set(value) {
-            field = value
-            if (value) {
-                isAutoRefreshOnResume = false
-            }
-        }
-
+    var isAutoRefreshOnStart: Boolean = false
     var isAutoRefreshOnResume: Boolean = false
-        set(value) {
-            field = value
-            if (value) {
-                isAutoRefreshOnCreate = false
-            }
-        }
 
     var isEnableRefresh: Boolean = true
         set(value) {
@@ -119,7 +108,7 @@ open class RefreshHelper<DataBean>(
 
     //覆盖 recyclerView 的状态view
     var stateViewLoading: View? = null
-    var stateViewEmptyData: View? = null
+    var stateViewEmptyData: View? = TextView(context).apply { text = "空页面" }
     var stateViewNetLose: View? = null
     var stateViewError: View? = null
 
@@ -141,6 +130,8 @@ open class RefreshHelper<DataBean>(
         } else if (activityOrFragment is Fragment) {
             activityOrFragment.parentFragment?.lifecycle?.addObserver(this)
             activityOrFragment.context?.let { context = it }
+            isAutoRefreshOnStart = true
+            isAutoRefreshOnCreate = false
             Log.d(tag, "init context is Fragment , tag = ${activityOrFragment.tag}")
         }
 
@@ -174,6 +165,8 @@ open class RefreshHelper<DataBean>(
 
         initStateView()
 
+        //默认展示空页面
+        updateRefreshState(State.EMPTY_DATA)
 
     }
 
@@ -294,7 +287,7 @@ open class RefreshHelper<DataBean>(
     /**
      * 可通过继承，自己实现逻辑
      */
-    open fun refresh(refreshLayout: RefreshLayout){
+    open fun refresh(refreshLayout: RefreshLayout) {
         requestData?.invoke(currentPage, dataPerPage) {
             when {
                 it.isNullOrEmpty() -> {
@@ -332,11 +325,11 @@ open class RefreshHelper<DataBean>(
             when (state) {
                 State.LOADING -> stateViewLoading?.let {
                     coverView = it
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it, -1, -1)
                 }
                 State.EMPTY_DATA -> stateViewEmptyData?.let {
                     coverView = it
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it, -1, -1)
                 }
 
                 State.NO_MORE_DATA -> stateViewLoadMoreNoMoreData?.isVisible = true
@@ -345,14 +338,13 @@ open class RefreshHelper<DataBean>(
 
                 State.NET_LOSE -> stateViewNetLose?.let {
                     coverView = it
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it, -1, -1)
                 }
 
                 State.ERROR -> stateViewError?.let {
                     coverView = it
-                    stateViewContainer.addView(it)
+                    stateViewContainer.addView(it, -1, -1)
                 }
-
             }
         }
     }
@@ -399,14 +391,6 @@ open class RefreshHelper<DataBean>(
     }
 
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    fun autoRefreshOnResume() {
-        if (isAutoRefreshOnResume && isEnableLoadMore) {
-            Log.d(tag, "autoRefreshOnResume")
-            smartRefreshLayout?.let { callRefresh(it) }
-        }
-    }
-
     @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
     fun autoRefreshOnCreate() {
         if (isAutoRefreshOnCreate && isEnableRefresh) {
@@ -415,5 +399,20 @@ open class RefreshHelper<DataBean>(
         }
     }
 
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+    fun autoRefreshOnStart() {
+        if (isAutoRefreshOnStart && isEnableRefresh) {
+            Log.d(tag, "autoRefreshOnCreate")
+            smartRefreshLayout?.let { callRefresh(it) }
+        }
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    fun autoRefreshOnResume() {
+        if (isAutoRefreshOnResume && isEnableLoadMore) {
+            Log.d(tag, "autoRefreshOnResume")
+            smartRefreshLayout?.let { callRefresh(it) }
+        }
+    }
 
 }
