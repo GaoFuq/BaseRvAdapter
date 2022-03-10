@@ -167,7 +167,7 @@ open class RefreshHelper<DataBean>(
 
         if (isAutoRefresh && isEnableRefresh) {
             Log.d(tag, "autoRefresh")
-            smartRefreshLayout?.autoRefresh()
+            smartRefreshLayout?.let { callRefresh(it) }
         }
     }
 
