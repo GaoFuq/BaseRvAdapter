@@ -86,8 +86,7 @@ open class RefreshHelper<DataBean>(
     var bottomViewContainer: FrameLayout? = null
         private set
 
-    var isAutoRefreshOnCreate: Boolean = true
-    var isAutoRefreshOnStart: Boolean = false
+    var isAutoRefresh: Boolean = true
     var isAutoRefreshOnResume: Boolean = false
 
     var isEnableRefresh: Boolean = true
@@ -131,8 +130,6 @@ open class RefreshHelper<DataBean>(
         } else if (activityOrFragment is Fragment) {
             activityOrFragment.parentFragment?.lifecycle?.addObserver(this)
             activityOrFragment.context?.let { context = it }
-            isAutoRefreshOnStart = true
-            isAutoRefreshOnCreate = false
             Log.d(tag, "init context is Fragment , tag = ${activityOrFragment.tag}")
         }
 
@@ -166,6 +163,10 @@ open class RefreshHelper<DataBean>(
 
         initStateView()
 
+        if (isAutoRefresh && isEnableRefresh) {
+            Log.d(tag, "autoRefresh")
+            smartRefreshLayout?.let { callRefresh(it) }
+        }
     }
 
     open fun setData(list: List<DataBean>?) {
@@ -239,6 +240,8 @@ open class RefreshHelper<DataBean>(
             if (cachedDataList == null) {
                 fetchDataFromDB = false
                 callRefresh(refreshLayout)
+            } else {
+                refreshLayout.finishRefresh(true)
             }
         } else {
             if (isNetworkConnected(context)) {
@@ -421,28 +424,15 @@ open class RefreshHelper<DataBean>(
     }
 
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
-    fun autoRefreshOnCreate() {
-        if (isAutoRefreshOnCreate && isEnableRefresh) {
-            Log.d(tag, "autoRefreshOnCreate")
-            smartRefreshLayout?.let { callRefresh(it) }
-        }
-    }
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_START)
-    fun autoRefreshOnStart() {
-        if (isAutoRefreshOnStart && isEnableRefresh) {
-            Log.d(tag, "autoRefreshOnCreate")
-            smartRefreshLayout?.let { callRefresh(it) }
-        }
-    }
-
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     fun autoRefreshOnResume() {
-        if (isAutoRefreshOnResume && isEnableLoadMore) {
-            Log.d(tag, "autoRefreshOnResume")
-            smartRefreshLayout?.let { callRefresh(it) }
+        if (::context.isInitialized) {
+            if (isAutoRefreshOnResume && isEnableRefresh) {
+                Log.d(tag, "autoRefreshOnResume")
+                smartRefreshLayout?.let { callRefresh(it) }
+            }
         }
+
     }
 
 }
