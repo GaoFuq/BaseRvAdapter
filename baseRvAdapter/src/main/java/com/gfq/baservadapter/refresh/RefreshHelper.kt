@@ -59,6 +59,7 @@ open class RefreshHelper<DataBean>(
      */
     private val totalPage: Int = 999,
     private val stateView: IStateView? = null,
+    private val queryDataFromDB: (() -> List<DataBean>?)? = null,
     private val requestData: ((curPage: Int, pageDataCount: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
     /**
      * @return 是否拦截状态视图的显示处理。默认会显示[stateView]提供的View，并且该View会覆盖recyclerView。
@@ -165,9 +166,22 @@ open class RefreshHelper<DataBean>(
 
         initStateView()
 
-        //默认展示空页面
-        updateRefreshState(State.EMPTY_DATA)
+    }
 
+    open fun setData(list: List<DataBean>?) {
+        if (smartRefreshLayout == null) return
+        if (recyclerView == null) return
+        if (list == null) {
+            if (adapter.dataList.isEmpty()) {
+                updateRefreshState(State.EMPTY_DATA)
+            }
+        } else {
+            adapter.dataList = list.toMutableList()
+            coverView?.let {
+                stateViewContainer.removeView(it)
+                coverView = null
+            }
+        }
     }
 
     private fun autoCreateIfNeed() {
@@ -201,7 +215,7 @@ open class RefreshHelper<DataBean>(
         stateViewLoadMoreNoMoreData = stateView?.emptyDataWithLoadMoreView(context, this)
         stateViewNetLose = stateView?.netLoseView(context, this)
 
-        if(stateViewEmptyData==null){
+        if (stateViewEmptyData == null) {
             stateViewEmptyData = TextView(context).apply { text = "空页面" }
         }
     }
@@ -216,13 +230,25 @@ open class RefreshHelper<DataBean>(
         }
     }
 
+    private var fetchDataFromDB = true
+
     private fun callRefresh(refreshLayout: RefreshLayout) {
-        if (isNetworkConnected(context)) {
-            doRefresh(refreshLayout)
+        if (fetchDataFromDB) {
+            val cachedDataList = queryDataFromDB?.invoke()
+            setData(cachedDataList)
+            if (cachedDataList == null) {
+                fetchDataFromDB = false
+                callRefresh(refreshLayout)
+            }
         } else {
-            refreshLayout.finishRefresh(false)
-            updateRefreshState(State.NET_LOSE)
+            if (isNetworkConnected(context)) {
+                doRefresh(refreshLayout)
+            } else {
+                refreshLayout.finishRefresh(false)
+                updateRefreshState(State.NET_LOSE)
+            }
         }
+        fetchDataFromDB = false
     }
 
     private fun doLoadMore(refreshLayout: RefreshLayout) {
