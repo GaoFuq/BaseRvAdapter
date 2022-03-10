@@ -174,7 +174,7 @@ open class RefreshHelper<DataBean>(
     open fun setData(list: List<DataBean>?) {
         if (smartRefreshLayout == null) return
         if (recyclerView == null) return
-        if (list == null) {
+        if (list.isNullOrEmpty()) {
             if (adapter.dataList.isEmpty()) {
                 updateRefreshState(State.EMPTY_DATA)
             }
@@ -234,14 +234,13 @@ open class RefreshHelper<DataBean>(
     }
 
 
-
     private fun callRefresh(refreshLayout: RefreshLayout) {
         if (fetchDataFromDB) {
             val cachedDataList = queryDataFromDB?.invoke()
             setData(cachedDataList)
             if (cachedDataList.isNullOrEmpty()) {
                 fetchDataFromDB = false
-                callRefresh(refreshLayout)
+                smartRefreshLayout?.autoRefresh()
             } else {
                 refreshLayout.finishRefresh(true)
             }
