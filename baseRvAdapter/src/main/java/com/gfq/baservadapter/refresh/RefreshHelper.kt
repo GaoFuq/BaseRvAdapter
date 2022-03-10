@@ -70,6 +70,8 @@ open class RefreshHelper<DataBean>(
 
     private val tag = "【RefreshHelper】"
 
+    private var fetchDataFromDB = true
+
 
     lateinit var context: Context
         private set
@@ -165,7 +167,7 @@ open class RefreshHelper<DataBean>(
 
         if (isAutoRefresh && isEnableRefresh) {
             Log.d(tag, "autoRefresh")
-            smartRefreshLayout?.let { callRefresh(it) }
+            smartRefreshLayout?.autoRefresh()
         }
     }
 
@@ -231,13 +233,13 @@ open class RefreshHelper<DataBean>(
         }
     }
 
-    private var fetchDataFromDB = true
+
 
     private fun callRefresh(refreshLayout: RefreshLayout) {
         if (fetchDataFromDB) {
             val cachedDataList = queryDataFromDB?.invoke()
             setData(cachedDataList)
-            if (cachedDataList == null) {
+            if (cachedDataList.isNullOrEmpty()) {
                 fetchDataFromDB = false
                 callRefresh(refreshLayout)
             } else {
