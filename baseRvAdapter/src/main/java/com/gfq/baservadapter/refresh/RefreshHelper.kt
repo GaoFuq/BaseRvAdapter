@@ -108,7 +108,7 @@ open class RefreshHelper<DataBean>(
 
     //覆盖 recyclerView 的状态view
     var stateViewLoading: View? = null
-    var stateViewEmptyData: View? = TextView(context).apply { text = "空页面" }
+    var stateViewEmptyData: View? = null
     var stateViewNetLose: View? = null
     var stateViewError: View? = null
 
@@ -200,6 +200,10 @@ open class RefreshHelper<DataBean>(
         stateViewEmptyData = stateView?.emptyDataView(context, this)
         stateViewLoadMoreNoMoreData = stateView?.emptyDataWithLoadMoreView(context, this)
         stateViewNetLose = stateView?.netLoseView(context, this)
+
+        if(stateViewEmptyData==null){
+            stateViewEmptyData = TextView(context).apply { text = "空页面" }
+        }
     }
 
 
