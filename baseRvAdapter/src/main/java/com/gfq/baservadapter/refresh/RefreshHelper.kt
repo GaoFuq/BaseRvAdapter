@@ -2,6 +2,7 @@ package com.gfq.baservadapter.refresh
 
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
@@ -29,6 +30,7 @@ import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import com.scwang.smart.refresh.layout.api.RefreshLayout
 import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 import androidx.fragment.app.FragmentActivity
+import kotlin.concurrent.thread
 
 /**
  * * 自动创建布局：[R.layout.refresh_helper_layout]
@@ -59,8 +61,8 @@ open class RefreshHelper<DataBean>(
      */
     private val totalPage: Int = 999,
     private val stateView: IStateView? = null,
-    private val queryDataFromDB: (() -> List<DataBean>?)? = null,
-    private val requestData: ((curPage: Int, pageDataCount: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
+    private val queryCachedData: (() -> List<DataBean>?)? = null,
+    private val requestData: ((curPage: Int, dataPerPage: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
     /**
      * @return 是否拦截状态视图的显示处理。默认会显示[stateView]提供的View，并且该View会覆盖recyclerView。
      * @see [updateRefreshState]
@@ -70,7 +72,10 @@ open class RefreshHelper<DataBean>(
 
     private val tag = "【RefreshHelper】"
 
-    private var fetchDataFromDB = true
+    private var fetchFromCachedData = true
+
+    //缓存的数据源
+    private var cachedDataList: List<DataBean>? = null
 
 
     lateinit var context: Context
@@ -187,6 +192,23 @@ open class RefreshHelper<DataBean>(
         }
     }
 
+    open fun addAll(list: List<DataBean>?) {
+        if (smartRefreshLayout == null) return
+        if (recyclerView == null) return
+        if (list.isNullOrEmpty()) {
+            if (adapter.dataList.isEmpty()) {
+                updateRefreshState(State.EMPTY_DATA)
+            }
+        } else {
+            adapter.addAll(list)
+            coverView?.let {
+                stateViewContainer.removeView(it)
+                coverView = null
+            }
+        }
+    }
+
+
     private fun autoCreateIfNeed() {
         if (smartRefreshLayout == null) {
             Log.d(tag, "auto create")
@@ -213,38 +235,63 @@ open class RefreshHelper<DataBean>(
 
 
     private fun initStateView() {
+        stateViewEmptyData = TextView(context).apply { text = "空页面" }
         stateViewLoading = stateView?.loadingView(context, this)
-        stateViewEmptyData = stateView?.emptyDataView(context, this)
+
         stateViewLoadMoreNoMoreData = stateView?.emptyDataWithLoadMoreView(context, this)
         stateViewNetLose = stateView?.netLoseView(context, this)
 
-        if (stateViewEmptyData == null) {
-            stateViewEmptyData = TextView(context).apply { text = "空页面" }
-        }
+        stateView?.emptyDataView(context, this)?.let { stateViewEmptyData = it }
     }
 
 
     private fun callLoadMore(refreshLayout: RefreshLayout) {
-        if (isNetworkConnected(context)) {
-            doLoadMore(refreshLayout)
+        if (fetchFromCachedData && !cachedDataList.isNullOrEmpty()) {
+            doLoadMoreFromCachedData(refreshLayout)
         } else {
-            refreshLayout.finishLoadMore(false)
-            updateRefreshState(State.NET_LOSE)
+            cachedDataList?.let { cachedDataList = null }
+            if (isNetworkConnected(context)) {
+                doLoadMore(refreshLayout)
+            } else {
+                refreshLayout.finishLoadMore(false)
+                updateRefreshState(State.NET_LOSE)
+            }
         }
     }
 
+    private fun doLoadMoreFromCachedData(refreshLayout: RefreshLayout) {
+        currentPage++
+        if (currentPage > totalPage) {
+            currentPage = totalPage
+            updateRefreshState(State.NO_MORE_DATA)
+            refreshLayout.finishLoadMoreWithNoMoreData()
+            return
+        }
 
-    private fun callRefresh(refreshLayout: RefreshLayout) {
-        if (fetchDataFromDB) {
-            val cachedDataList = queryDataFromDB?.invoke()
-            setData(cachedDataList)
-            if (cachedDataList.isNullOrEmpty()) {
-                fetchDataFromDB = false
-                smartRefreshLayout?.autoRefresh()
+        try {
+            val dataList = splitPage(currentPage, dataPerPage, cachedDataList)
+            if (dataList.isNullOrEmpty()) {
+                currentPage--
+                fetchFromCachedData = false
+                callLoadMore(refreshLayout)
             } else {
+                addAll(dataList)
                 refreshLayout.finishRefresh(true)
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            updateRefreshState(State.ERROR)
+            refreshLayout.finishLoadMore(false)
+        }
+    }
+
+    private var isFirstCallRefresh = true
+    private fun callRefresh(refreshLayout: RefreshLayout) {
+        if (isFirstCallRefresh && fetchFromCachedData) {//只有第一次刷新从缓存取数据
+            doRefreshFetchCachedData(refreshLayout)
         } else {
+            fetchFromCachedData = false
+            cachedDataList?.let { cachedDataList = null }
             if (isNetworkConnected(context)) {
                 doRefresh(refreshLayout)
             } else {
@@ -252,7 +299,35 @@ open class RefreshHelper<DataBean>(
                 updateRefreshState(State.NET_LOSE)
             }
         }
-        fetchDataFromDB = false
+
+    }
+
+    private fun doRefreshFetchCachedData(refreshLayout: RefreshLayout) {
+        thread {
+            cachedDataList = queryCachedData?.invoke()
+            if (cachedDataList.isNullOrEmpty()) {
+                fetchFromCachedData = false
+                if (activityOrFragment is Activity) {
+                    activityOrFragment.runOnUiThread { smartRefreshLayout?.autoRefresh() }
+                } else {
+                    (activityOrFragment as Fragment?)?.activity?.runOnUiThread { smartRefreshLayout?.autoRefresh() }
+                }
+            } else {
+                if (activityOrFragment is Activity) {
+                    activityOrFragment.runOnUiThread {
+                        setData(splitPage(1, dataPerPage, cachedDataList))
+                        refreshLayout.finishRefresh(true)
+                    }
+                } else {
+                    (activityOrFragment as Fragment?)?.activity?.runOnUiThread {
+                        setData(splitPage(1, dataPerPage, cachedDataList))
+                        refreshLayout.finishRefresh(true)
+                    }
+                }
+
+            }
+            isFirstCallRefresh = false
+        }.start()
     }
 
     private fun doLoadMore(refreshLayout: RefreshLayout) {
@@ -263,7 +338,10 @@ open class RefreshHelper<DataBean>(
             refreshLayout.finishLoadMoreWithNoMoreData()
             return
         }
-        if (requestData == null) return
+        if (requestData == null) {
+            refreshLayout.finishLoadMore(false)
+            return
+        }
         try {
             loadMore(refreshLayout)
         } catch (e: Exception) {
@@ -436,4 +514,26 @@ open class RefreshHelper<DataBean>(
 
     }
 
+    /**
+     * 缓存数据分页
+     */
+    fun splitPage(
+        curPage: Int,
+        dataPerPage: Int,
+        dataList: List<DataBean>?,
+    ): List<DataBean>? {
+        if (dataList == null) {
+            return null
+        }
+        val start = (curPage - 1) * dataPerPage
+        var end = curPage * dataPerPage
+        if (end > dataList.size) {
+            end = dataList.size - 1
+        }
+        if (start > end) {
+            return null
+        }
+        return dataList.subList(start, end)
+
+    }
 }
