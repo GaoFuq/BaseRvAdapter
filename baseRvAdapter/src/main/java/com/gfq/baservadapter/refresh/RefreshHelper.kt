@@ -73,7 +73,7 @@ open class RefreshHelper<DataBean>(
     private val tag = "【RefreshHelper】"
 
     private var fetchFromCachedData = true
-
+    private var isFirstCallRefresh = true
     //缓存的数据源
     private var cachedDataList: List<DataBean>? = null
 
@@ -285,7 +285,7 @@ open class RefreshHelper<DataBean>(
         }
     }
 
-    private var isFirstCallRefresh = true
+
     private fun callRefresh(refreshLayout: RefreshLayout) {
         if (isFirstCallRefresh && fetchFromCachedData) {//只有第一次刷新从缓存取数据
             doRefreshFetchCachedData(refreshLayout)
