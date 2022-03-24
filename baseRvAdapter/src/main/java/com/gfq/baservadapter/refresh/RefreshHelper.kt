@@ -12,13 +12,11 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.core.view.KeyEventDispatcher
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gfq.baservadapter.R
@@ -30,7 +28,11 @@ import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import com.scwang.smart.refresh.layout.api.RefreshLayout
 import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
+import kotlin.coroutines.CoroutineContext
 
 /**
  * * 自动创建布局：[R.layout.refresh_helper_layout]
@@ -61,7 +63,7 @@ open class RefreshHelper<DataBean>(
      */
     private val totalPage: Int = 999,
     private val stateView: IStateView? = null,
-    private val queryCachedData: (() -> List<DataBean>?)? = null,
+    private val queryCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
     private val requestData: ((curPage: Int, dataPerPage: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
     /**
      * @return 是否拦截状态视图的显示处理。默认会显示[stateView]提供的View，并且该View会覆盖recyclerView。
@@ -74,6 +76,7 @@ open class RefreshHelper<DataBean>(
 
     private var fetchFromCachedData = true
     private var isFirstCallRefresh = true
+
     //缓存的数据源
     private var cachedDataList: List<DataBean>? = null
 
@@ -303,31 +306,31 @@ open class RefreshHelper<DataBean>(
     }
 
     private fun doRefreshFetchCachedData(refreshLayout: RefreshLayout) {
-        thread {
-            cachedDataList = queryCachedData?.invoke()
+        launch(Dispatchers.IO) {
+            cachedDataList = queryCachedData?.invoke(this)
             if (cachedDataList.isNullOrEmpty()) {
                 fetchFromCachedData = false
-                if (activityOrFragment is Activity) {
-                    activityOrFragment.runOnUiThread { smartRefreshLayout?.autoRefresh() }
-                } else {
-                    (activityOrFragment as Fragment?)?.activity?.runOnUiThread { smartRefreshLayout?.autoRefresh() }
-                }
+                launch(Dispatchers.Main) { refreshLayout.autoRefresh() }
             } else {
-                if (activityOrFragment is Activity) {
-                    activityOrFragment.runOnUiThread {
-                        setData(splitPage(1, dataPerPage, cachedDataList))
-                        refreshLayout.finishRefresh(true)
-                    }
-                } else {
-                    (activityOrFragment as Fragment?)?.activity?.runOnUiThread {
-                        setData(splitPage(1, dataPerPage, cachedDataList))
-                        refreshLayout.finishRefresh(true)
-                    }
+                launch(Dispatchers.Main) {
+                    setData(splitPage(1, dataPerPage, cachedDataList))
+                    refreshLayout.finishRefresh(true)
                 }
-
             }
             isFirstCallRefresh = false
-        }.start()
+        }
+    }
+
+    fun launch(context: CoroutineContext = Dispatchers.Main, block: () -> Unit) {
+        if (activityOrFragment is ComponentActivity) {
+            activityOrFragment.lifecycleScope.launch(context) {
+                block()
+            }
+        } else {
+            (activityOrFragment as Fragment).lifecycleScope.launch(context) {
+                block()
+            }
+        }
     }
 
     private fun doLoadMore(refreshLayout: RefreshLayout) {
