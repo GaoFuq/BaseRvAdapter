@@ -34,7 +34,7 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperAutoCreate(
     stateView: IStateView? = null,
     dataPerPage: Int = 10,
     crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline queryCachedData: (() -> List<T>?)? = null,
+    noinline queryCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
@@ -62,7 +62,7 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperAutoCreate(
     stateView: IStateView? = null,
     dataPerPage: Int = 10,
     crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline queryCachedData: (() -> List<T>?)? = null,
+    noinline queryCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
@@ -91,7 +91,7 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperNormalCreate(
     stateView: IStateView? = null,
     dataPerPage: Int = 10,
     crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline queryCachedData: (() -> List<T>?)? = null,
+    noinline queryCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
@@ -120,7 +120,7 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperNormalCreate(
     stateView: IStateView? = null,
     dataPerPage: Int = 10,
     crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline queryCachedData: (() -> List<T>?)? = null,
+    noinline queryCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
