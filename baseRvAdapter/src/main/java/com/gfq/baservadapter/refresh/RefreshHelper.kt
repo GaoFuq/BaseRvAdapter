@@ -2,7 +2,6 @@ package com.gfq.baservadapter.refresh
 
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
@@ -61,7 +60,8 @@ open class RefreshHelper<DataBean>(
      */
     private val totalPage: Int = 999,
     private val stateView: IStateView? = null,
-    private val queryCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
+    private val queryRAMCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
+    private val queryDBCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
     private val requestData: ((curPage: Int, dataPerPage: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
     /**
      * @return 是否拦截状态视图的显示处理。默认会显示[stateView]提供的View，并且该View会覆盖recyclerView。
@@ -250,7 +250,7 @@ open class RefreshHelper<DataBean>(
         if (fetchFromCachedData && !cachedDataList.isNullOrEmpty()) {
             doLoadMoreFromCachedData(refreshLayout)
         } else {
-            cachedDataList?.let { cachedDataList = null }
+            cachedDataList = null
             if (isNetworkConnected(context)) {
                 doLoadMore(refreshLayout)
             } else {
@@ -277,7 +277,7 @@ open class RefreshHelper<DataBean>(
                 callLoadMore(refreshLayout)
             } else {
                 addAll(dataList)
-                refreshLayout.finishRefresh(true)
+                refreshLayout.finishLoadMore(true)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -292,7 +292,7 @@ open class RefreshHelper<DataBean>(
             doRefreshFetchCachedData(refreshLayout)
         } else {
             fetchFromCachedData = false
-            cachedDataList?.let { cachedDataList = null }
+            cachedDataList = null
             if (isNetworkConnected(context)) {
                 doRefresh(refreshLayout)
             } else {
@@ -304,8 +304,28 @@ open class RefreshHelper<DataBean>(
     }
 
     private fun doRefreshFetchCachedData(refreshLayout: RefreshLayout) {
+        if (queryRAMCachedData != null) {
+            queryRAMCachedData(refreshLayout)
+        } else if (queryDBCachedData != null) {
+            queryDBCachedData(refreshLayout)
+        }
+        isFirstCallRefresh = false
+    }
+
+    private fun queryRAMCachedData(refreshLayout: RefreshLayout) {
+        cachedDataList = queryRAMCachedData?.invoke(this)
+        if (cachedDataList.isNullOrEmpty()) {
+            fetchFromCachedData = false
+            queryDBCachedData(refreshLayout)
+        } else {
+            setData(splitPage(1, dataPerPage, cachedDataList))
+            refreshLayout.finishRefresh(true)
+        }
+    }
+
+    private fun queryDBCachedData(refreshLayout: RefreshLayout) {
         launch(Dispatchers.IO) {
-            cachedDataList = queryCachedData?.invoke(this)
+            cachedDataList = queryDBCachedData?.invoke(this)
             if (cachedDataList.isNullOrEmpty()) {
                 fetchFromCachedData = false
                 launch(Dispatchers.Main) { refreshLayout.autoRefresh() }
@@ -315,9 +335,9 @@ open class RefreshHelper<DataBean>(
                     refreshLayout.finishRefresh(true)
                 }
             }
-            isFirstCallRefresh = false
         }
     }
+
 
     fun launch(context: CoroutineContext = Dispatchers.Main, block: () -> Unit) {
         if (activityOrFragment is ComponentActivity) {

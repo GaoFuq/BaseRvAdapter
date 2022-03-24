@@ -34,7 +34,8 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperAutoCreate(
     stateView: IStateView? = null,
     dataPerPage: Int = 10,
     crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline queryCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
+    noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
+    noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
@@ -45,7 +46,8 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperAutoCreate(
                 bindAdapterItemView(this, holder, data, position)
             }
         },
-        queryCachedData=queryCachedData,
+        queryRAMCachedData=queryRAMCachedData,
+        queryDBCachedData=queryDBCachedData,
         requestData = request,
         stateView = stateView,
         dataPerPage = dataPerPage,
@@ -62,7 +64,8 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperAutoCreate(
     stateView: IStateView? = null,
     dataPerPage: Int = 10,
     crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline queryCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
+    noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
+    noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
@@ -73,7 +76,8 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperAutoCreate(
                 bindAdapterItemView(this, holder, data, position)
             }
         },
-        queryCachedData=queryCachedData,
+        queryRAMCachedData=queryRAMCachedData,
+        queryDBCachedData=queryDBCachedData,
         requestData = request,
         stateView = stateView,
         dataPerPage = dataPerPage,
@@ -91,7 +95,8 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperNormalCreate(
     stateView: IStateView? = null,
     dataPerPage: Int = 10,
     crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline queryCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
+    noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
+    noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
@@ -104,7 +109,8 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperNormalCreate(
                 bindAdapterItemView(this, holder, data, position)
             }
         },
-        queryCachedData=queryCachedData,
+        queryRAMCachedData=queryRAMCachedData,
+        queryDBCachedData=queryDBCachedData,
         requestData = request,
         stateView = stateView,
         dataPerPage = dataPerPage,
@@ -120,7 +126,8 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperNormalCreate(
     stateView: IStateView? = null,
     dataPerPage: Int = 10,
     crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline queryCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
+    noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
+    noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
@@ -133,7 +140,8 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperNormalCreate(
                 bindAdapterItemView(this, holder, data, position)
             }
         },
-        queryCachedData =queryCachedData,
+        queryRAMCachedData =queryRAMCachedData,
+        queryDBCachedData =queryDBCachedData,
         requestData = request,
         stateView = stateView,
         dataPerPage = dataPerPage,
