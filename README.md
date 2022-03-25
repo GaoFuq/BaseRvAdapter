@@ -1,6 +1,6 @@
 # BaseRvAdapter
 
-` implementation 'com.github.GaoFuq:BaseRvAdapter:1.4.0' `
+` implementation 'com.github.GaoFuq:BaseRvAdapter:release' `
 
 使用 databinding 封装 recyclerview 的 Adapter。
 封装了 单选 和 多选 功能。
