@@ -27,6 +27,8 @@ import com.scwang.smart.refresh.layout.api.RefreshLayout
 import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -175,6 +177,22 @@ open class RefreshHelper<DataBean>(
             Log.d(tag, "autoRefresh")
             smartRefreshLayout?.let { callRefresh(it) }
         }
+
+
+        recyclerView?.addOnScrollListener(object :RecyclerView.OnScrollListener(){
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                val layoutManager = recyclerView.layoutManager
+                if(layoutManager is LinearLayoutManager){
+                    if(layoutManager.findLastVisibleItemPosition() > layoutManager.itemCount - 4){
+                        smartRefreshLayout?.let { callLoadMore(it) }
+                    }
+                }else if(layoutManager is GridLayoutManager){
+                    if(layoutManager.findLastVisibleItemPosition() > layoutManager.itemCount - 4){
+                        smartRefreshLayout?.let { callLoadMore(it) }
+                    }
+                }
+            }
+        })
     }
 
     open fun setData(list: List<DataBean>?) {
