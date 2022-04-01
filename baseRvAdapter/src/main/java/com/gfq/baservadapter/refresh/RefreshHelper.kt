@@ -177,22 +177,6 @@ open class RefreshHelper<DataBean>(
             Log.d(tag, "autoRefresh")
             smartRefreshLayout?.let { callRefresh(it) }
         }
-
-
-        recyclerView?.addOnScrollListener(object :RecyclerView.OnScrollListener(){
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                val layoutManager = recyclerView.layoutManager
-                if(layoutManager is LinearLayoutManager){
-                    if(layoutManager.findLastVisibleItemPosition() > layoutManager.itemCount - 4){
-                        smartRefreshLayout?.let { callLoadMore(it) }
-                    }
-                }else if(layoutManager is GridLayoutManager){
-                    if(layoutManager.findLastVisibleItemPosition() > layoutManager.itemCount - 4){
-                        smartRefreshLayout?.let { callLoadMore(it) }
-                    }
-                }
-            }
-        })
     }
 
     open fun setData(list: List<DataBean>?) {
@@ -306,7 +290,7 @@ open class RefreshHelper<DataBean>(
 
 
     private fun callRefresh(refreshLayout: RefreshLayout) {
-        if (isFirstCallRefresh && fetchFromCachedData) {//只有第一次刷新从缓存取数据
+        if (isFirstCallRefresh && fetchFromCachedData && (queryRAMCachedData != null || queryDBCachedData != null)) {//只有第一次刷新从缓存取数据
             doRefreshFetchCachedData(refreshLayout)
         } else {
             fetchFromCachedData = false
