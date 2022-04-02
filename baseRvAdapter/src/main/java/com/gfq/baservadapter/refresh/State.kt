@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 
 enum class State{
+        NONE ,
         LOADING ,
 
         REFRESH_SUCCESS,

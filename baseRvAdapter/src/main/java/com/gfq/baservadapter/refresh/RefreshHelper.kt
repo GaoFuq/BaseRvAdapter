@@ -98,6 +98,8 @@ open class RefreshHelper<DataBean>(
 
     var isAutoRefresh: Boolean = true
     var isAutoRefreshOnResume: Boolean = false
+    var isFirstAutoRefreshFromCacheNeedAnim: Boolean = false
+    var isFirstAutoRefreshFromNetNeedAnim: Boolean = true
 
     var isEnableRefresh: Boolean = true
         set(value) {
@@ -111,7 +113,7 @@ open class RefreshHelper<DataBean>(
             smartRefreshLayout?.setEnableLoadMore(value)
         }
 
-    private var state: State = State.LOADING
+    private var state: State = State.NONE
 
     //当前覆盖在 recyclerView 之上的view
     private var coverView: View? = null
@@ -279,6 +281,7 @@ open class RefreshHelper<DataBean>(
                 callLoadMore(refreshLayout)
             } else {
                 addAll(dataList)
+                updateRefreshState(State.LOAD_MORE_SUCCESS)
                 refreshLayout.finishLoadMore(true)
             }
         } catch (e: Exception) {
@@ -291,15 +294,25 @@ open class RefreshHelper<DataBean>(
 
     private fun callRefresh(refreshLayout: RefreshLayout) {
         if (isFirstCallRefresh && fetchFromCachedData && (queryRAMCachedData != null || queryDBCachedData != null)) {//只有第一次刷新从缓存取数据
-            doRefreshFetchCachedData(refreshLayout)
+            if (isFirstAutoRefreshFromCacheNeedAnim) {
+                isFirstAutoRefreshFromCacheNeedAnim = false
+                refreshLayout.autoRefresh()
+            } else {
+                doRefreshFetchCachedData(refreshLayout)
+            }
         } else {
             fetchFromCachedData = false
             cachedDataList = null
-            if (isNetworkConnected(context)) {
-                doRefresh(refreshLayout)
+            if (isFirstAutoRefreshFromNetNeedAnim) {
+                isFirstAutoRefreshFromNetNeedAnim = false
+                refreshLayout.autoRefresh()
             } else {
-                refreshLayout.finishRefresh(false)
-                updateRefreshState(State.NET_LOSE)
+                if (isNetworkConnected(context)) {
+                    doRefresh(refreshLayout)
+                } else {
+                    refreshLayout.finishRefresh(false)
+                    updateRefreshState(State.NET_LOSE)
+                }
             }
         }
 
@@ -320,7 +333,13 @@ open class RefreshHelper<DataBean>(
             fetchFromCachedData = false
             queryDBCachedData(refreshLayout)
         } else {
-            setData(splitPage(1, dataPerPage, cachedDataList))
+            val splitPage = splitPage(1, dataPerPage, cachedDataList)
+            if (splitPage.isNullOrEmpty()&& adapter.dataList.isEmpty()) {
+                updateRefreshState(State.EMPTY_DATA)
+            }else{
+                updateRefreshState(State.REFRESH_SUCCESS)
+            }
+            setData(splitPage)
             refreshLayout.finishRefresh(true)
         }
     }
@@ -330,10 +349,23 @@ open class RefreshHelper<DataBean>(
             cachedDataList = queryDBCachedData?.invoke(this)
             if (cachedDataList.isNullOrEmpty()) {
                 fetchFromCachedData = false
-                launch(Dispatchers.Main) { refreshLayout.autoRefresh() }
+                launch(Dispatchers.Main) {
+                    if (isFirstAutoRefreshFromNetNeedAnim) {
+                        isFirstAutoRefreshFromNetNeedAnim = false
+                        refreshLayout.autoRefresh()
+                    }else{
+                        callRefresh(refreshLayout)
+                    }
+                }
             } else {
                 launch(Dispatchers.Main) {
-                    setData(splitPage(1, dataPerPage, cachedDataList))
+                    val splitPage = splitPage(1, dataPerPage, cachedDataList)
+                    if (splitPage.isNullOrEmpty()&& adapter.dataList.isEmpty()) {
+                        updateRefreshState(State.EMPTY_DATA)
+                    }else{
+                        updateRefreshState(State.REFRESH_SUCCESS)
+                    }
+                    setData(splitPage)
                     refreshLayout.finishRefresh(true)
                 }
             }
@@ -480,6 +512,7 @@ open class RefreshHelper<DataBean>(
                     coverView = it
                     stateViewContainer.addView(it, -1, -1)
                 }
+                State.NONE -> {}
             }
         }
     }
