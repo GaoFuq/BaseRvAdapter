@@ -423,7 +423,7 @@ open class RefreshHelper<DataBean>(
                     }
                 }
                 else -> {
-                    if (it.size == dataPerPage) {
+                    if (it.size >= dataPerPage) {
                         updateRefreshState(State.LOAD_MORE_SUCCESS)
                         adapter.addAll(it.toMutableList())
                         refreshLayout.finishLoadMore(true)
