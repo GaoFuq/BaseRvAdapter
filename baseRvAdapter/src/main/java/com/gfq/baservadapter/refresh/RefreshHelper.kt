@@ -249,8 +249,8 @@ open class RefreshHelper<DataBean>(
         stateView?.emptyDataView(context, this)?.let { stateViewEmptyData = it }
     }
 
-
-    private fun callLoadMore(refreshLayout: RefreshLayout) {
+    //没有加载更多动画，直接发起请求
+    fun callLoadMore(refreshLayout: RefreshLayout) {
         if (fetchFromCachedData && !cachedDataList.isNullOrEmpty()) {
             doLoadMoreFromCachedData(refreshLayout)
         } else {
@@ -291,8 +291,8 @@ open class RefreshHelper<DataBean>(
         }
     }
 
-
-    private fun callRefresh(refreshLayout: RefreshLayout) {
+    //没有下拉刷新动画，直接发起请求
+    fun callRefresh(refreshLayout: RefreshLayout) {
         if (isFirstCallRefresh && fetchFromCachedData && (queryRAMCachedData != null || queryDBCachedData != null)) {//只有第一次刷新从缓存取数据
             if (isFirstAutoRefreshFromCacheNeedAnim) {
                 isFirstAutoRefreshFromCacheNeedAnim = false
@@ -466,7 +466,7 @@ open class RefreshHelper<DataBean>(
                     refreshLayout.finishRefresh(true)
                 }
                 else -> {
-                    if (it.size == dataPerPage) {
+                    if (it.size >= dataPerPage) {
                         updateRefreshState(State.REFRESH_SUCCESS)
                     } else if (it.size < dataPerPage) {
                         updateRefreshState(State.NO_MORE_DATA)
