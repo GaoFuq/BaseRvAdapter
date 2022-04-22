@@ -18,7 +18,13 @@ enum class State{
         /**
          * 当前加载更多请求返回的数据为null或empty
          */
-        NO_MORE_DATA,
+        NO_MORE_DATA_LOADMORE,
+
+        /**
+         * 当前刷新请求返回的数据为null或empty
+         */
+        NO_MORE_DATA_REFRESH,
+
 
         NET_LOSE,
     }

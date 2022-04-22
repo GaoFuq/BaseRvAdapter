@@ -73,7 +73,6 @@ abstract class BaseRVAdapter<DataBean>
     }
 
 
-
     var lastSelectedPosition = -1
         private set
 
@@ -103,7 +102,7 @@ abstract class BaseRVAdapter<DataBean>
     fun doMultipleSelect(
         holder: BaseVH,
         position: Int,
-        maxSelectCount: Int? = null,
+        maxSelectCount: Int = -1,
         onCountOverMax: (() -> Unit)? = null,
         interceptReSelect: Boolean = false,
     ) {
@@ -118,11 +117,11 @@ abstract class BaseRVAdapter<DataBean>
                         setItemCancelSelect(position)
                     }
                 } else {
-                    maxSelectCount?.let {
+                    if (maxSelectCount <= 0) {
+                        setItemSelected(position)
+                    } else {
                         if (getMultipleSelectedCount() >= maxSelectCount) {
                             onCountOverMax?.invoke()
-                        } else {
-                            setItemSelected(position)
                         }
                     }
                 }
@@ -227,26 +226,11 @@ abstract class BaseRVAdapter<DataBean>
     fun getSingleSelectData(): DataBean? =
         dataList.firstOrNull { (it is RVSelect && it.select) }
 
-    fun addAll(list: Collection<DataBean>, positionStart: Int = -1) {
-        val posStart = if (positionStart < 0) {
-            dataList.size
-        } else {
-            positionStart
-        }
-        whenAddDataPositionLegit(posStart) {
-            if (dataList.addAll(list)) {
-                notifyItemRangeInserted(posStart, list.size)
-            }
-        }
-    }
 
-    fun setData(position: Int, data: DataBean) {
-        whenPositionLegit(position) {
-            dataList[position] = data
-            notifyItemChanged(position)
-        }
-    }
-
+    /**
+     * 添加一个数据到列表的指定位置。
+     * 默认添加到列表最后。
+     */
     fun add(data: DataBean, positionStart: Int = -1) {
         val posStart = if (positionStart < 0) {
             dataList.size
@@ -254,26 +238,104 @@ abstract class BaseRVAdapter<DataBean>
             positionStart
         }
         whenAddDataPositionLegit(posStart) {
-            dataList.add(data)
+            dataList.add(posStart, data)
             notifyItemInserted(posStart)
+
+            if (lastSelectedPosition >= 0) {
+                if (lastSelectedPosition > posStart) {
+                    lastSelectedPosition++
+                }
+            }
+        }
+    }
+
+    /**
+     * 添加数据集合到列表的指定位置
+     */
+    fun addAll(list: Collection<DataBean>, positionStart: Int = -1) {
+        if (list.isEmpty()) return
+        val posStart = if (positionStart < 0) {
+            dataList.size
+        } else {
+            positionStart
+        }
+        whenAddDataPositionLegit(posStart) {
+            if (dataList.addAll(posStart, list)) {
+                notifyItemRangeInserted(posStart, list.size)
+
+                if (lastSelectedPosition >= 0) {
+                    if (lastSelectedPosition >= posStart) {
+                        lastSelectedPosition += list.size
+                    }
+                }
+            }
         }
     }
 
 
-    fun removeAt(position: Int) {
+    /**
+     * 更新指定位置的数据。
+     * 使用一个新的数据替换该位置的原数据。
+     */
+    fun updateItem(position: Int, data: DataBean) {
+        whenPositionLegit(position) {
+            dataList[position] = data
+            notifyItemChanged(position)
+        }
+    }
+
+
+    /**
+     * 更新指定位置的数据。
+     * 修改该位置的原数据。
+     */
+    fun updateItem(position: Int,update: DataBean.() -> Unit) {
+        whenPositionLegit(position) {
+            update(dataList[position])
+            notifyItemChanged(position)
+        }
+    }
+
+
+    /**
+     * 更新特定条件的数据集合。
+     * updateData({it==null}){//doUpdate}
+     */
+    fun updateItemWhen(filter: (DataBean) -> Boolean, update: DataBean.() -> Unit) {
+        dataList.filter { filter(it) }.forEach {
+            val position = dataList.indexOf(it)
+            updateItem(position, update)
+        }
+    }
+
+
+    fun removeAt(position: Int): DataBean? {
+        var temp: DataBean? = null
         whenPositionLegit(position) {
             Log.d("【BaseRVAdapter】", "removeAt position = $position")
             whenDataIsRVSelectBean(dataList[position]) { lastSelectedPosition = -1 }
-            dataList.removeAt(position)
+            temp = dataList.removeAt(position)
             notifyItemRemoved(position)
             notifyItemRangeChanged(position, dataList.size - position)
+
+            if (lastSelectedPosition >= 0) {
+                if (lastSelectedPosition > position) {
+                    lastSelectedPosition--
+                }
+                if (lastSelectedPosition == position) {
+                    lastSelectedPosition = -1
+                }
+            }
         }
+        return temp
     }
 
-    fun remove(data: DataBean?) {
+    fun remove(data: DataBean?): DataBean? {
+        var temp: DataBean? = null
         data?.let {
-            removeAt(dataList.indexOf(data))
+            temp = removeAt(dataList.indexOf(data))
         }
+        return temp
     }
 
     fun clear() {
@@ -286,7 +348,6 @@ abstract class BaseRVAdapter<DataBean>
     abstract fun onBindView(holder: BaseVH, data: DataBean, position: Int)
 
     override fun getItemCount(): Int = dataList.size
-
 
 
     open fun onItemSelected(holder: BaseVH, data: DataBean, position: Int) {}

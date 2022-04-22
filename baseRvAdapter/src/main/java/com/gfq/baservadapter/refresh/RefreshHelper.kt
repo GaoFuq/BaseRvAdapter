@@ -23,12 +23,9 @@ import com.gfq.baservadapter.databinding.RefreshHelperLayoutBinding
 import com.scwang.smart.refresh.footer.ClassicsFooter
 import com.scwang.smart.refresh.header.MaterialHeader
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
-import com.scwang.smart.refresh.layout.api.RefreshLayout
 import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -42,13 +39,11 @@ import kotlin.coroutines.CoroutineContext
  * *
  * * 自动创建的 RefreshHelper 才有 [topViewContainer],[bottomViewContainer]。
  * * 自动创建的 RefreshHelper [stateViewLoadMoreNoMoreData] 才会生效。
- * * 可以通过继承，重写[loadMore],[refresh]。
  */
-open class RefreshHelper<DataBean>(
+ class RefreshHelper<DataBean>(
+    val autoCreate: Boolean,
     val activityOrFragment: Any,
     val adapter: BaseRVAdapter<DataBean>,
-    var smartRefreshLayout: SmartRefreshLayout? = null,
-    var recyclerView: RecyclerView? = null,
     /**
      * 当前页索引
      */
@@ -74,8 +69,15 @@ open class RefreshHelper<DataBean>(
 
     private val tag = "【RefreshHelper】"
 
+    lateinit var smartRefreshLayout: SmartRefreshLayout
+    lateinit var recyclerView: RecyclerView
+
     private var fetchFromCachedData = true
     private var isFirstCallRefresh = true
+
+
+    //刷新前，被删除了的items的条件判断
+    private var idDeletedItemsFilter: ((DataBean) -> Boolean)? = null
 
     //缓存的数据源
     private var cachedDataList: List<DataBean>? = null
@@ -98,19 +100,26 @@ open class RefreshHelper<DataBean>(
 
     var isAutoRefresh: Boolean = true
     var isAutoRefreshOnResume: Boolean = false
+        set(value) {
+            field = value
+            if (value) {
+                isAutoRefresh = false
+            }
+        }
+
     var isFirstAutoRefreshFromCacheNeedAnim: Boolean = false
     var isFirstAutoRefreshFromNetNeedAnim: Boolean = true
 
     var isEnableRefresh: Boolean = true
         set(value) {
             field = value
-            smartRefreshLayout?.setEnableRefresh(value)
+            smartRefreshLayout.setEnableRefresh(value)
         }
 
     var isEnableLoadMore: Boolean = true
         set(value) {
             field = value
-            smartRefreshLayout?.setEnableLoadMore(value)
+            smartRefreshLayout.setEnableLoadMore(value)
         }
 
     private var state: State = State.NONE
@@ -152,22 +161,22 @@ open class RefreshHelper<DataBean>(
             adapter.recyclerView = recyclerView
         }
 
-        if (recyclerView?.layoutManager == null) {
-            recyclerView?.layoutManager = LinearLayoutManager(context)
+        if (recyclerView.layoutManager == null) {
+            recyclerView.layoutManager = LinearLayoutManager(context)
         }
 
 
-        smartRefreshLayout?.run {
+        smartRefreshLayout.run {
             setEnableLoadMore(isEnableLoadMore)
             setEnableRefresh(isEnableRefresh)
             setRefreshHeader(MaterialHeader(context))
             setRefreshFooter(ClassicsFooter(context).setSpinnerStyle(SpinnerStyle.FixedBehind))
             setOnRefreshListener {
-                callRefresh(it)
+                callRefresh()
             }
 
             setOnLoadMoreListener {
-                callLoadMore(it)
+                callLoadMore()
             }
         }
 
@@ -177,13 +186,33 @@ open class RefreshHelper<DataBean>(
 
         if (isAutoRefresh && isEnableRefresh) {
             Log.d(tag, "autoRefresh")
-            smartRefreshLayout?.let { callRefresh(it) }
+            callRefresh()
         }
     }
 
-    open fun setData(list: List<DataBean>?) {
-        if (smartRefreshLayout == null) return
-        if (recyclerView == null) return
+
+    /**
+     * 添加一个数据到列表中。默认添加到列表的最后面。
+     */
+    fun addData(data: DataBean?, position: Int = -1) {
+        if (data == null) {
+            if (adapter.dataList.isEmpty()) {
+                updateRefreshState(State.EMPTY_DATA)
+            }
+        } else {
+            adapter.add(data, position)
+            coverView?.let {
+                stateViewContainer.removeView(it)
+                coverView = null
+            }
+        }
+    }
+
+
+    /**
+     * 重新设置数据源，会覆盖之前的所有数据
+     */
+    fun setData(list: List<DataBean>?) {
         if (list.isNullOrEmpty()) {
             if (adapter.dataList.isEmpty()) {
                 updateRefreshState(State.EMPTY_DATA)
@@ -197,9 +226,10 @@ open class RefreshHelper<DataBean>(
         }
     }
 
-    open fun addAll(list: List<DataBean>?) {
-        if (smartRefreshLayout == null) return
-        if (recyclerView == null) return
+    /**
+     * 添加一个数据集合到列表的最后
+     */
+    fun addAll(list: List<DataBean>?) {
         if (list.isNullOrEmpty()) {
             if (adapter.dataList.isEmpty()) {
                 updateRefreshState(State.EMPTY_DATA)
@@ -215,7 +245,7 @@ open class RefreshHelper<DataBean>(
 
 
     private fun autoCreateIfNeed() {
-        if (smartRefreshLayout == null) {
+        if (autoCreate) {
             Log.d(tag, "auto create")
             val binding =
                 DataBindingUtil.inflate<RefreshHelperLayoutBinding>(LayoutInflater.from(context),
@@ -229,7 +259,7 @@ open class RefreshHelper<DataBean>(
             bottomViewContainer = binding.bottomViewContainer
         } else {
             Log.d(tag, "user xml create")
-            val parent = this.recyclerView?.parent
+            val parent = this.recyclerView.parent
             if (parent != null && parent is FrameLayout) {
                 stateViewContainer = parent
             } else {
@@ -249,27 +279,27 @@ open class RefreshHelper<DataBean>(
         stateView?.emptyDataView(context, this)?.let { stateViewEmptyData = it }
     }
 
-    //没有加载更多动画，直接发起请求
-    fun callLoadMore(refreshLayout: RefreshLayout) {
+    //没有上滑加载更多动画，直接发起请求
+    fun callLoadMore() {
         if (fetchFromCachedData && !cachedDataList.isNullOrEmpty()) {
-            doLoadMoreFromCachedData(refreshLayout)
+            doLoadMoreFromCachedData()
         } else {
             cachedDataList = null
             if (isNetworkConnected(context)) {
-                doLoadMore(refreshLayout)
+                doLoadMore()
             } else {
-                refreshLayout.finishLoadMore(false)
+                smartRefreshLayout.finishLoadMore(false)
                 updateRefreshState(State.NET_LOSE)
             }
         }
     }
 
-    private fun doLoadMoreFromCachedData(refreshLayout: RefreshLayout) {
+    private fun doLoadMoreFromCachedData() {
         currentPage++
         if (currentPage > totalPage) {
             currentPage = totalPage
-            updateRefreshState(State.NO_MORE_DATA)
-            refreshLayout.finishLoadMoreWithNoMoreData()
+            updateRefreshState(State.NO_MORE_DATA_LOADMORE)
+            smartRefreshLayout.finishLoadMoreWithNoMoreData()
             return
         }
 
@@ -278,73 +308,97 @@ open class RefreshHelper<DataBean>(
             if (dataList.isNullOrEmpty()) {
                 currentPage--
                 fetchFromCachedData = false
-                callLoadMore(refreshLayout)
+                callLoadMore()
             } else {
                 addAll(dataList)
                 updateRefreshState(State.LOAD_MORE_SUCCESS)
-                refreshLayout.finishLoadMore(true)
+                smartRefreshLayout.finishLoadMore(true)
             }
         } catch (e: Exception) {
             e.printStackTrace()
             updateRefreshState(State.ERROR)
-            refreshLayout.finishLoadMore(false)
+            smartRefreshLayout.finishLoadMore(false)
         }
     }
 
-    //没有下拉刷新动画，直接发起请求
-    fun callRefresh(refreshLayout: RefreshLayout) {
+    /**
+     * 当列表的item数据发生改变后，调用该方法更新列表。避免网络刷新请求。
+     * @param filter 判定item是否已经改变。
+     */
+    fun updateItemWhen(filter: (DataBean) -> Boolean, update: DataBean.() -> Unit) {
+        adapter.updateItemWhen(filter, update)
+    }
+
+    /**
+     * 当调用接口删除了列表的某些item后，调用该方法更新列表。避免网络刷新请求。
+     * @param filter 判定item是否已被移除。
+     */
+    fun updateDataListWhenItemDeleted(filter: (DataBean) -> Boolean) {
+        adapter.updateItemWhen({ filter(it) }) {
+            if(adapter.dataList.isEmpty()){
+                callRefresh()
+            }else {
+                adapter.remove(this)
+            }
+        }
+    }
+
+
+    /**
+     * 手动调用该方法进行无下拉动画的刷新。
+     */
+    fun callRefresh() {
         if (isFirstCallRefresh && fetchFromCachedData && (queryRAMCachedData != null || queryDBCachedData != null)) {//只有第一次刷新从缓存取数据
             if (isFirstAutoRefreshFromCacheNeedAnim) {
                 isFirstAutoRefreshFromCacheNeedAnim = false
-                refreshLayout.autoRefresh()
+                smartRefreshLayout.autoRefresh()
             } else {
-                doRefreshFetchCachedData(refreshLayout)
+                callRefreshFetchCachedData()
             }
         } else {
             fetchFromCachedData = false
             cachedDataList = null
             if (isFirstAutoRefreshFromNetNeedAnim) {
                 isFirstAutoRefreshFromNetNeedAnim = false
-                refreshLayout.autoRefresh()
+                smartRefreshLayout.autoRefresh()
             } else {
                 if (isNetworkConnected(context)) {
-                    doRefresh(refreshLayout)
+                    doRefresh()
                 } else {
-                    refreshLayout.finishRefresh(false)
+                    smartRefreshLayout.finishRefresh(false)
                     updateRefreshState(State.NET_LOSE)
                 }
             }
         }
-
     }
 
-    private fun doRefreshFetchCachedData(refreshLayout: RefreshLayout) {
+    private fun callRefreshFetchCachedData() {
         if (queryRAMCachedData != null) {
-            queryRAMCachedData(refreshLayout)
+            queryRAMCachedData()
         } else if (queryDBCachedData != null) {
-            queryDBCachedData(refreshLayout)
+            queryDBCachedData()
         }
         isFirstCallRefresh = false
     }
 
-    private fun queryRAMCachedData(refreshLayout: RefreshLayout) {
+    private fun queryRAMCachedData() {
         cachedDataList = queryRAMCachedData?.invoke(this)
         if (cachedDataList.isNullOrEmpty()) {
             fetchFromCachedData = false
-            queryDBCachedData(refreshLayout)
+            queryDBCachedData()
         } else {
             val splitPage = splitPage(1, dataPerPage, cachedDataList)
-            if (splitPage.isNullOrEmpty()&& adapter.dataList.isEmpty()) {
+            if (splitPage.isNullOrEmpty() && adapter.dataList.isEmpty()) {
                 updateRefreshState(State.EMPTY_DATA)
-            }else{
+            } else {
                 updateRefreshState(State.REFRESH_SUCCESS)
             }
             setData(splitPage)
-            refreshLayout.finishRefresh(true)
+            smartRefreshLayout.finishRefresh(true)
         }
     }
 
-    private fun queryDBCachedData(refreshLayout: RefreshLayout) {
+    private fun queryDBCachedData() {
         launch(Dispatchers.IO) {
             cachedDataList = queryDBCachedData?.invoke(this)
             if (cachedDataList.isNullOrEmpty()) {
@@ -352,21 +406,21 @@ open class RefreshHelper<DataBean>(
                 launch(Dispatchers.Main) {
                     if (isFirstAutoRefreshFromNetNeedAnim) {
                         isFirstAutoRefreshFromNetNeedAnim = false
-                        refreshLayout.autoRefresh()
-                    }else{
-                        callRefresh(refreshLayout)
+                        smartRefreshLayout.autoRefresh()
+                    } else {
+                        callRefresh()
                     }
                 }
             } else {
                 launch(Dispatchers.Main) {
                     val splitPage = splitPage(1, dataPerPage, cachedDataList)
-                    if (splitPage.isNullOrEmpty()&& adapter.dataList.isEmpty()) {
+                    if (splitPage.isNullOrEmpty() && adapter.dataList.isEmpty()) {
                         updateRefreshState(State.EMPTY_DATA)
-                    }else{
+                    } else {
                         updateRefreshState(State.REFRESH_SUCCESS)
                     }
                     setData(splitPage)
-                    refreshLayout.finishRefresh(true)
+                    smartRefreshLayout.finishRefresh(true)
                 }
             }
         }
@@ -385,52 +439,50 @@ open class RefreshHelper<DataBean>(
         }
     }
 
-    private fun doLoadMore(refreshLayout: RefreshLayout) {
+    private fun doLoadMore() {
         currentPage++
         if (currentPage > totalPage) {
             currentPage = totalPage
-            updateRefreshState(State.NO_MORE_DATA)
-            refreshLayout.finishLoadMoreWithNoMoreData()
+            updateRefreshState(State.NO_MORE_DATA_LOADMORE)
+            smartRefreshLayout.finishLoadMoreWithNoMoreData()
             return
         }
         if (requestData == null) {
-            refreshLayout.finishLoadMore(false)
+            smartRefreshLayout.finishLoadMore(false)
             return
         }
         try {
-            loadMore(refreshLayout)
+            loadMore()
         } catch (e: Exception) {
             e.printStackTrace()
             updateRefreshState(State.ERROR)
-            refreshLayout.finishLoadMore(false)
+            smartRefreshLayout.finishLoadMore(false)
         }
     }
 
-    /**
-     * 可通过继承，自己实现逻辑
-     */
-    open fun loadMore(refreshLayout: RefreshLayout) {
+
+    private fun loadMore() {
         requestData?.invoke(currentPage, dataPerPage) {
             when {
                 it.isNullOrEmpty() -> {
                     currentPage--
                     if (adapter.dataList.isEmpty()) {
                         updateRefreshState(State.EMPTY_DATA)
-                        refreshLayout.finishLoadMore(true)
+                        smartRefreshLayout.finishLoadMore(true)
                     } else {
-                        updateRefreshState(State.NO_MORE_DATA)
-                        refreshLayout.finishLoadMoreWithNoMoreData()
+                        updateRefreshState(State.NO_MORE_DATA_LOADMORE)
+                        smartRefreshLayout.finishLoadMoreWithNoMoreData()
                     }
                 }
                 else -> {
                     if (it.size >= dataPerPage) {
                         updateRefreshState(State.LOAD_MORE_SUCCESS)
                         adapter.addAll(it.toMutableList())
-                        refreshLayout.finishLoadMore(true)
+                        smartRefreshLayout.finishLoadMore(true)
                     } else if (it.size < dataPerPage) {
-                        updateRefreshState(State.NO_MORE_DATA)
+                        updateRefreshState(State.NO_MORE_DATA_LOADMORE)
                         adapter.addAll(it.toMutableList())
-                        refreshLayout.finishLoadMoreWithNoMoreData()
+                        smartRefreshLayout.finishLoadMoreWithNoMoreData()
                     }
 
                 }
@@ -438,41 +490,39 @@ open class RefreshHelper<DataBean>(
         }
     }
 
-    private fun doRefresh(refreshLayout: RefreshLayout) {
+    private fun doRefresh() {
         currentPage = 1
         if (requestData == null) return
         updateRefreshState(State.LOADING)
         try {
-            refresh(refreshLayout)
+            refresh()
         } catch (e: Exception) {
             e.printStackTrace()
             updateRefreshState(State.ERROR)
-            refreshLayout.finishRefresh(false)
+            smartRefreshLayout.finishRefresh(false)
         }
     }
 
-    /**
-     * 可通过继承，自己实现逻辑
-     */
-    open fun refresh(refreshLayout: RefreshLayout) {
+
+    private fun refresh() {
         requestData?.invoke(currentPage, dataPerPage) {
             when {
                 it.isNullOrEmpty() -> {
                     if (adapter.dataList.isEmpty()) {
                         updateRefreshState(State.EMPTY_DATA)
                     } else {
-                        updateRefreshState(State.NO_MORE_DATA)
+                        updateRefreshState(State.NO_MORE_DATA_REFRESH)
                     }
-                    refreshLayout.finishRefresh(true)
+                    smartRefreshLayout.finishRefresh(true)
                 }
                 else -> {
                     if (it.size >= dataPerPage) {
                         updateRefreshState(State.REFRESH_SUCCESS)
                     } else if (it.size < dataPerPage) {
-                        updateRefreshState(State.NO_MORE_DATA)
+                        updateRefreshState(State.NO_MORE_DATA_REFRESH)
                     }
                     adapter.dataList = it.toMutableList()
-                    refreshLayout.finishRefresh(true)
+                    smartRefreshLayout.finishRefresh(true)
                 }
             }
         }
@@ -498,8 +548,8 @@ open class RefreshHelper<DataBean>(
                     coverView = it
                     stateViewContainer.addView(it, -1, -1)
                 }
-
-                State.NO_MORE_DATA -> stateViewLoadMoreNoMoreData?.isVisible = true
+                State.NO_MORE_DATA_REFRESH -> {}
+                State.NO_MORE_DATA_LOADMORE -> stateViewLoadMoreNoMoreData?.isVisible = true
                 State.REFRESH_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
                 State.LOAD_MORE_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
 
@@ -513,6 +563,7 @@ open class RefreshHelper<DataBean>(
                     stateViewContainer.addView(it, -1, -1)
                 }
                 State.NONE -> {}
+
             }
         }
     }
@@ -564,7 +615,7 @@ open class RefreshHelper<DataBean>(
         if (::context.isInitialized) {
             if (isAutoRefreshOnResume && isEnableRefresh) {
                 Log.d(tag, "autoRefreshOnResume")
-                smartRefreshLayout?.let { callRefresh(it) }
+                callRefresh()
             }
         }
 

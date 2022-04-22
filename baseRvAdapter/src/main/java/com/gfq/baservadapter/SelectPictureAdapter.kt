@@ -136,7 +136,7 @@ abstract class SelectPictureAdapter(
             if (reSelectPicturePosition >= 0) {
                 //重选
                 if (tempList.isNotEmpty()) {
-                    setData(reSelectPicturePosition, tempList[0])
+                    updateItem(reSelectPicturePosition, tempList[0])
                 }
                 reSelectPicturePosition = -1
             } else {

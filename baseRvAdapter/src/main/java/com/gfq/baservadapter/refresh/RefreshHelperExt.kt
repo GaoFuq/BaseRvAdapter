@@ -40,6 +40,7 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperAutoCreate(
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
     return RefreshHelper(
+        autoCreate = true,
         activityOrFragment = this,
         adapter = object : BaseRVAdapter<T>(itemLayoutId) {
             override fun onBindView(holder: BaseVH, data: T, position: Int) {
@@ -70,6 +71,7 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperAutoCreate(
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
     return RefreshHelper(
+        autoCreate = true,
         activityOrFragment = this,
         adapter = object : BaseRVAdapter<T>(itemLayoutId) {
             override fun onBindView(holder: BaseVH, data: T, position: Int) {
@@ -101,9 +103,8 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperNormalCreate(
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
     return RefreshHelper(
+        autoCreate = false,
         activityOrFragment = this,
-        smartRefreshLayout = smartRefreshLayout,
-        recyclerView = recyclerView,
         adapter = object : BaseRVAdapter<T>(itemLayoutId) {
             override fun onBindView(holder: BaseVH, data: T, position: Int) {
                 bindAdapterItemView(this, holder, data, position)
@@ -115,7 +116,10 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperNormalCreate(
         stateView = stateView,
         dataPerPage = dataPerPage,
         onStateChange = onStateChange
-    )
+    ).apply {
+        this.smartRefreshLayout = smartRefreshLayout
+        this.recyclerView = recyclerView
+    }
 }
 
 
@@ -132,9 +136,8 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperNormalCreate(
     noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
 ): RefreshHelper<T> {
     return RefreshHelper(
+        autoCreate = false,
         activityOrFragment = this,
-        smartRefreshLayout = smartRefreshLayout,
-        recyclerView = recyclerView,
         adapter = object : BaseRVAdapter<T>(itemLayoutId) {
             override fun onBindView(holder: BaseVH, data: T, position: Int) {
                 bindAdapterItemView(this, holder, data, position)
@@ -146,5 +149,8 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperNormalCreate(
         stateView = stateView,
         dataPerPage = dataPerPage,
         onStateChange = onStateChange
-    )
+    ).apply {
+        this.smartRefreshLayout = smartRefreshLayout
+        this.recyclerView = recyclerView
+    }
 }
