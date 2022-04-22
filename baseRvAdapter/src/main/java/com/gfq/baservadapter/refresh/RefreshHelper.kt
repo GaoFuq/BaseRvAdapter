@@ -335,10 +335,9 @@ import kotlin.coroutines.CoroutineContext
      */
     fun updateDataListWhenItemDeleted(filter: (DataBean) -> Boolean) {
         adapter.updateItemWhen({ filter(it) }) {
-            if(adapter.dataList.isEmpty()){
+            adapter.remove(this)
+            if (adapter.dataList.isEmpty()) {
                 callRefresh()
-            }else {
-                adapter.remove(this)
             }
         }
     }
