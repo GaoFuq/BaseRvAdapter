@@ -333,7 +333,7 @@ import kotlin.coroutines.CoroutineContext
      * 当调用接口删除了列表的某些item后，调用该方法更新列表。避免网络刷新请求。
      * @param filter 判定item是否已被移除。
      */
-    fun updateDataListWhenItemDeleted(filter: (DataBean) -> Boolean) {
+    fun updateWhenItemDeleted(filter: (DataBean) -> Boolean) {
         adapter.updateItemWhen({ filter(it) }) {
             adapter.remove(this)
             if (adapter.dataList.isEmpty()) {
