@@ -56,6 +56,8 @@ import kotlin.coroutines.CoroutineContext
      * 总页数
      */
     private val totalPage: Int = 999,
+    var smartRefreshLayout: SmartRefreshLayout?=null,
+    var recyclerView: RecyclerView?=null,
     private val stateView: IStateView? = null,
     private val queryRAMCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
     private val queryDBCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
@@ -69,8 +71,7 @@ import kotlin.coroutines.CoroutineContext
 
     private val tag = "【RefreshHelper】"
 
-    lateinit var smartRefreshLayout: SmartRefreshLayout
-    lateinit var recyclerView: RecyclerView
+
 
     private var fetchFromCachedData = true
     private var isFirstCallRefresh = true
@@ -113,13 +114,13 @@ import kotlin.coroutines.CoroutineContext
     var isEnableRefresh: Boolean = true
         set(value) {
             field = value
-            smartRefreshLayout.setEnableRefresh(value)
+            smartRefreshLayout?.setEnableRefresh(value)
         }
 
     var isEnableLoadMore: Boolean = true
         set(value) {
             field = value
-            smartRefreshLayout.setEnableLoadMore(value)
+            smartRefreshLayout?.setEnableLoadMore(value)
         }
 
     private var state: State = State.NONE
@@ -161,12 +162,12 @@ import kotlin.coroutines.CoroutineContext
             adapter.recyclerView = recyclerView
         }
 
-        if (recyclerView.layoutManager == null) {
-            recyclerView.layoutManager = LinearLayoutManager(context)
+        if (recyclerView?.layoutManager == null) {
+            recyclerView?.layoutManager = LinearLayoutManager(context)
         }
 
 
-        smartRefreshLayout.run {
+        smartRefreshLayout?.run {
             setEnableLoadMore(isEnableLoadMore)
             setEnableRefresh(isEnableRefresh)
             setRefreshHeader(MaterialHeader(context))
@@ -259,7 +260,7 @@ import kotlin.coroutines.CoroutineContext
             bottomViewContainer = binding.bottomViewContainer
         } else {
             Log.d(tag, "user xml create")
-            val parent = this.recyclerView.parent
+            val parent = this.recyclerView?.parent
             if (parent != null && parent is FrameLayout) {
                 stateViewContainer = parent
             } else {
@@ -288,7 +289,7 @@ import kotlin.coroutines.CoroutineContext
             if (isNetworkConnected(context)) {
                 doLoadMore()
             } else {
-                smartRefreshLayout.finishLoadMore(false)
+                smartRefreshLayout?.finishLoadMore(false)
                 updateRefreshState(State.NET_LOSE)
             }
         }
@@ -299,7 +300,7 @@ import kotlin.coroutines.CoroutineContext
         if (currentPage > totalPage) {
             currentPage = totalPage
             updateRefreshState(State.NO_MORE_DATA_LOADMORE)
-            smartRefreshLayout.finishLoadMoreWithNoMoreData()
+            smartRefreshLayout?.finishLoadMoreWithNoMoreData()
             return
         }
 
@@ -312,12 +313,12 @@ import kotlin.coroutines.CoroutineContext
             } else {
                 addAll(dataList)
                 updateRefreshState(State.LOAD_MORE_SUCCESS)
-                smartRefreshLayout.finishLoadMore(true)
+                smartRefreshLayout?.finishLoadMore(true)
             }
         } catch (e: Exception) {
             e.printStackTrace()
             updateRefreshState(State.ERROR)
-            smartRefreshLayout.finishLoadMore(false)
+            smartRefreshLayout?.finishLoadMore(false)
         }
     }
 
@@ -350,7 +351,7 @@ import kotlin.coroutines.CoroutineContext
         if (isFirstCallRefresh && fetchFromCachedData && (queryRAMCachedData != null || queryDBCachedData != null)) {//只有第一次刷新从缓存取数据
             if (isFirstAutoRefreshFromCacheNeedAnim) {
                 isFirstAutoRefreshFromCacheNeedAnim = false
-                smartRefreshLayout.autoRefresh()
+                smartRefreshLayout?.autoRefresh()
             } else {
                 callRefreshFetchCachedData()
             }
@@ -359,12 +360,12 @@ import kotlin.coroutines.CoroutineContext
             cachedDataList = null
             if (isFirstAutoRefreshFromNetNeedAnim) {
                 isFirstAutoRefreshFromNetNeedAnim = false
-                smartRefreshLayout.autoRefresh()
+                smartRefreshLayout?.autoRefresh()
             } else {
                 if (isNetworkConnected(context)) {
                     doRefresh()
                 } else {
-                    smartRefreshLayout.finishRefresh(false)
+                    smartRefreshLayout?.finishRefresh(false)
                     updateRefreshState(State.NET_LOSE)
                 }
             }
@@ -393,7 +394,7 @@ import kotlin.coroutines.CoroutineContext
                 updateRefreshState(State.REFRESH_SUCCESS)
             }
             setData(splitPage)
-            smartRefreshLayout.finishRefresh(true)
+            smartRefreshLayout?.finishRefresh(true)
         }
     }
 
@@ -405,7 +406,7 @@ import kotlin.coroutines.CoroutineContext
                 launch(Dispatchers.Main) {
                     if (isFirstAutoRefreshFromNetNeedAnim) {
                         isFirstAutoRefreshFromNetNeedAnim = false
-                        smartRefreshLayout.autoRefresh()
+                        smartRefreshLayout?.autoRefresh()
                     } else {
                         callRefresh()
                     }
@@ -419,7 +420,7 @@ import kotlin.coroutines.CoroutineContext
                         updateRefreshState(State.REFRESH_SUCCESS)
                     }
                     setData(splitPage)
-                    smartRefreshLayout.finishRefresh(true)
+                    smartRefreshLayout?.finishRefresh(true)
                 }
             }
         }
@@ -443,11 +444,11 @@ import kotlin.coroutines.CoroutineContext
         if (currentPage > totalPage) {
             currentPage = totalPage
             updateRefreshState(State.NO_MORE_DATA_LOADMORE)
-            smartRefreshLayout.finishLoadMoreWithNoMoreData()
+            smartRefreshLayout?.finishLoadMoreWithNoMoreData()
             return
         }
         if (requestData == null) {
-            smartRefreshLayout.finishLoadMore(false)
+            smartRefreshLayout?.finishLoadMore(false)
             return
         }
         try {
@@ -455,7 +456,7 @@ import kotlin.coroutines.CoroutineContext
         } catch (e: Exception) {
             e.printStackTrace()
             updateRefreshState(State.ERROR)
-            smartRefreshLayout.finishLoadMore(false)
+            smartRefreshLayout?.finishLoadMore(false)
         }
     }
 
@@ -467,21 +468,21 @@ import kotlin.coroutines.CoroutineContext
                     currentPage--
                     if (adapter.dataList.isEmpty()) {
                         updateRefreshState(State.EMPTY_DATA)
-                        smartRefreshLayout.finishLoadMore(true)
+                        smartRefreshLayout?.finishLoadMore(true)
                     } else {
                         updateRefreshState(State.NO_MORE_DATA_LOADMORE)
-                        smartRefreshLayout.finishLoadMoreWithNoMoreData()
+                        smartRefreshLayout?.finishLoadMoreWithNoMoreData()
                     }
                 }
                 else -> {
                     if (it.size >= dataPerPage) {
                         updateRefreshState(State.LOAD_MORE_SUCCESS)
                         adapter.addAll(it.toMutableList())
-                        smartRefreshLayout.finishLoadMore(true)
+                        smartRefreshLayout?.finishLoadMore(true)
                     } else if (it.size < dataPerPage) {
                         updateRefreshState(State.NO_MORE_DATA_LOADMORE)
                         adapter.addAll(it.toMutableList())
-                        smartRefreshLayout.finishLoadMoreWithNoMoreData()
+                        smartRefreshLayout?.finishLoadMoreWithNoMoreData()
                     }
 
                 }
@@ -498,7 +499,7 @@ import kotlin.coroutines.CoroutineContext
         } catch (e: Exception) {
             e.printStackTrace()
             updateRefreshState(State.ERROR)
-            smartRefreshLayout.finishRefresh(false)
+            smartRefreshLayout?.finishRefresh(false)
         }
     }
 
@@ -512,7 +513,7 @@ import kotlin.coroutines.CoroutineContext
                     } else {
                         updateRefreshState(State.NO_MORE_DATA_REFRESH)
                     }
-                    smartRefreshLayout.finishRefresh(true)
+                    smartRefreshLayout?.finishRefresh(true)
                 }
                 else -> {
                     if (it.size >= dataPerPage) {
@@ -521,7 +522,7 @@ import kotlin.coroutines.CoroutineContext
                         updateRefreshState(State.NO_MORE_DATA_REFRESH)
                     }
                     adapter.dataList = it.toMutableList()
-                    smartRefreshLayout.finishRefresh(true)
+                    smartRefreshLayout?.finishRefresh(true)
                 }
             }
         }

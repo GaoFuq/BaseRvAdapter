@@ -21,8 +21,6 @@ import com.scwang.smart.refresh.layout.SmartRefreshLayout
  */
 
 
-
-
 inline fun <reified T : ViewDataBinding> BaseVH.get(): T {
     return this.vhBinding as T
 }
@@ -47,8 +45,8 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperAutoCreate(
                 bindAdapterItemView(this, holder, data, position)
             }
         },
-        queryRAMCachedData=queryRAMCachedData,
-        queryDBCachedData=queryDBCachedData,
+        queryRAMCachedData = queryRAMCachedData,
+        queryDBCachedData = queryDBCachedData,
         requestData = request,
         stateView = stateView,
         dataPerPage = dataPerPage,
@@ -78,8 +76,8 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperAutoCreate(
                 bindAdapterItemView(this, holder, data, position)
             }
         },
-        queryRAMCachedData=queryRAMCachedData,
-        queryDBCachedData=queryDBCachedData,
+        queryRAMCachedData = queryRAMCachedData,
+        queryDBCachedData = queryDBCachedData,
         requestData = request,
         stateView = stateView,
         dataPerPage = dataPerPage,
@@ -110,16 +108,15 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperNormalCreate(
                 bindAdapterItemView(this, holder, data, position)
             }
         },
-        queryRAMCachedData=queryRAMCachedData,
-        queryDBCachedData=queryDBCachedData,
+        queryRAMCachedData = queryRAMCachedData,
+        queryDBCachedData = queryDBCachedData,
         requestData = request,
         stateView = stateView,
+        smartRefreshLayout = smartRefreshLayout,
+        recyclerView = recyclerView,
         dataPerPage = dataPerPage,
         onStateChange = onStateChange
-    ).apply {
-        this.smartRefreshLayout = smartRefreshLayout
-        this.recyclerView = recyclerView
-    }
+    )
 }
 
 
@@ -143,14 +140,13 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperNormalCreate(
                 bindAdapterItemView(this, holder, data, position)
             }
         },
-        queryRAMCachedData =queryRAMCachedData,
-        queryDBCachedData =queryDBCachedData,
+        queryRAMCachedData = queryRAMCachedData,
+        queryDBCachedData = queryDBCachedData,
         requestData = request,
+        smartRefreshLayout = smartRefreshLayout,
+        recyclerView = recyclerView,
         stateView = stateView,
         dataPerPage = dataPerPage,
         onStateChange = onStateChange
-    ).apply {
-        this.smartRefreshLayout = smartRefreshLayout
-        this.recyclerView = recyclerView
-    }
+    )
 }
