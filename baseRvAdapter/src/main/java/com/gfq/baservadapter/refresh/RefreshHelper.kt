@@ -40,7 +40,7 @@ import kotlin.coroutines.CoroutineContext
  * * 自动创建的 RefreshHelper 才有 [topViewContainer],[bottomViewContainer]。
  * * 自动创建的 RefreshHelper [stateViewLoadMoreNoMoreData] 才会生效。
  */
- class RefreshHelper<DataBean>(
+class RefreshHelper<DataBean>(
     val autoCreate: Boolean,
     val activityOrFragment: Any,
     val adapter: BaseRVAdapter<DataBean>,
@@ -56,8 +56,8 @@ import kotlin.coroutines.CoroutineContext
      * 总页数
      */
     private val totalPage: Int = 999,
-    var smartRefreshLayout: SmartRefreshLayout?=null,
-    var recyclerView: RecyclerView?=null,
+    var smartRefreshLayout: SmartRefreshLayout? = null,
+    var recyclerView: RecyclerView? = null,
     private val stateView: IStateView? = null,
     private val queryRAMCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
     private val queryDBCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
@@ -70,7 +70,6 @@ import kotlin.coroutines.CoroutineContext
 ) : LifecycleObserver {
 
     private val tag = "【RefreshHelper】"
-
 
 
     private var fetchFromCachedData = true
@@ -565,7 +564,7 @@ import kotlin.coroutines.CoroutineContext
             State.NONE -> {}
         }
         //覆盖默认的处理
-        onStateChange?.invoke(this,state)
+        onStateChange?.invoke(this, state)
     }
 
 
@@ -642,5 +641,40 @@ import kotlin.coroutines.CoroutineContext
         }
         return dataList.subList(start, end)
 
+    }
+
+
+    /**
+     * 外部主动设置当前的刷新状态，不会触发 onStateChange
+     */
+    fun setEmptyState() {
+        if (this.state == State.EMPTY_DATA) return
+        this.state = State.EMPTY_DATA
+        coverView?.let {
+            stateViewContainer.removeView(it)
+            coverView = null
+        }
+        adapter.clear()
+        stateViewEmptyData?.let {
+            coverView = it
+            stateViewContainer.addView(it, -1, -1)
+        }
+    }
+
+    /**
+     * 外部主动设置当前的刷新状态，不会触发 onStateChange
+     */
+    fun setErrorState() {
+        if (this.state == State.ERROR) return
+        this.state = State.ERROR
+        coverView?.let {
+            stateViewContainer.removeView(it)
+            coverView = null
+        }
+        adapter.clear()
+        stateViewError?.let {
+            coverView = it
+            stateViewContainer.addView(it, -1, -1)
+        }
     }
 }
