@@ -26,6 +26,7 @@ import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
+import com.gfq.baservadapter.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -76,8 +77,6 @@ class RefreshHelper<DataBean>(
     private var isFirstCallRefresh = true
 
 
-    //刷新前，被删除了的items的条件判断
-    private var idDeletedItemsFilter: ((DataBean) -> Boolean)? = null
 
     //缓存的数据源
     private var cachedDataList: List<DataBean>? = null
@@ -149,9 +148,10 @@ class RefreshHelper<DataBean>(
             context = activityOrFragment
             Log.d(tag, "init context is ${activityOrFragment.componentName.className}")
         } else if (activityOrFragment is Fragment) {
-            activityOrFragment.parentFragment?.lifecycle?.addObserver(this)
+            activityOrFragment.lifecycle.addObserver(this)
             activityOrFragment.context?.let { context = it }
-            Log.d(tag, "init context is Fragment , tag = ${activityOrFragment.tag}")
+            Log.d(tag,
+                "init context is Fragment , name = ${activityOrFragment.javaClass.simpleName}")
         }
 
         autoCreateIfNeed()
@@ -184,6 +184,10 @@ class RefreshHelper<DataBean>(
 
         initStateView()
 
+    }
+
+
+    fun start() {
         if (isAutoRefresh && isEnableRefresh) {
             Log.d(tag, "autoRefresh")
             callRefresh()
