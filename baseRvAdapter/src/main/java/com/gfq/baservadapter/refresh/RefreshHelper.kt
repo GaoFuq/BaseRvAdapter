@@ -66,7 +66,7 @@ import kotlin.coroutines.CoroutineContext
      * @return 是否拦截状态视图的显示处理。默认会显示[stateView]提供的View，并且该View会覆盖recyclerView。
      * @see [updateRefreshState]
      */
-    private val onStateChange: ((helper: RefreshHelper<DataBean>, state: State) -> Boolean)? = null,
+    private val onStateChange: ((helper: RefreshHelper<DataBean>, state: State) -> Unit)? = null,
 ) : LifecycleObserver {
 
     private val tag = "【RefreshHelper】"
@@ -528,44 +528,44 @@ import kotlin.coroutines.CoroutineContext
         }
     }
 
+
     private fun updateRefreshState(state: State) {
         if (this.state == state) return
         this.state = state
-        Log.d(tag, "onStateChange state = " + state.name)
-        val intercept = onStateChange?.invoke(this, state)
-        if (intercept == null || intercept == false) {
-            coverView?.let {
-                stateViewContainer.removeView(it)
-                coverView = null
-            }
-            //默认处理
-            when (state) {
-                State.LOADING -> stateViewLoading?.let {
-                    coverView = it
-                    stateViewContainer.addView(it, -1, -1)
-                }
-                State.EMPTY_DATA -> stateViewEmptyData?.let {
-                    coverView = it
-                    stateViewContainer.addView(it, -1, -1)
-                }
-                State.NO_MORE_DATA_REFRESH -> {}
-                State.NO_MORE_DATA_LOADMORE -> stateViewLoadMoreNoMoreData?.isVisible = true
-                State.REFRESH_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
-                State.LOAD_MORE_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
-
-                State.NET_LOSE -> stateViewNetLose?.let {
-                    coverView = it
-                    stateViewContainer.addView(it, -1, -1)
-                }
-
-                State.ERROR -> stateViewError?.let {
-                    coverView = it
-                    stateViewContainer.addView(it, -1, -1)
-                }
-                State.NONE -> {}
-
-            }
+        coverView?.let {
+            stateViewContainer.removeView(it)
+            coverView = null
         }
+        Log.d(tag, "onStateChange state = " + state.name)
+        //默认处理
+        when (state) {
+            State.LOADING -> stateViewLoading?.let {
+                coverView = it
+                stateViewContainer.addView(it, -1, -1)
+            }
+            State.EMPTY_DATA -> stateViewEmptyData?.let {
+                coverView = it
+                stateViewContainer.addView(it, -1, -1)
+            }
+            //刷新到空数据，默认不处理视图和数据集合。
+            State.NO_MORE_DATA_REFRESH -> {}
+            State.NO_MORE_DATA_LOADMORE -> stateViewLoadMoreNoMoreData?.isVisible = true
+            State.REFRESH_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
+            State.LOAD_MORE_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
+
+            State.NET_LOSE -> stateViewNetLose?.let {
+                coverView = it
+                stateViewContainer.addView(it, -1, -1)
+            }
+
+            State.ERROR -> stateViewError?.let {
+                coverView = it
+                stateViewContainer.addView(it, -1, -1)
+            }
+            State.NONE -> {}
+        }
+        //覆盖默认的处理
+        onStateChange?.invoke(this,state)
     }
 
 

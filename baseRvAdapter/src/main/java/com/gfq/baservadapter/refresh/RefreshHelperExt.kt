@@ -35,7 +35,7 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperAutoCreate(
     noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
-    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
+    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Unit)? = null,
 ): RefreshHelper<T> {
     return RefreshHelper(
         autoCreate = true,
@@ -66,7 +66,7 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperAutoCreate(
     noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
-    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
+    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Unit)? = null,
 ): RefreshHelper<T> {
     return RefreshHelper(
         autoCreate = true,
@@ -98,7 +98,7 @@ inline fun <reified T : RVSelect> FragmentActivity.refreshHelperNormalCreate(
     noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
-    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
+    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Unit)? = null,
 ): RefreshHelper<T> {
     return RefreshHelper(
         autoCreate = false,
@@ -130,7 +130,7 @@ inline fun <reified T : RVSelect> Fragment.refreshHelperNormalCreate(
     noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
-    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Boolean)? = null,
+    noinline onStateChange: ((helper: RefreshHelper<T>, state: State) -> Unit)? = null,
 ): RefreshHelper<T> {
     return RefreshHelper(
         autoCreate = false,
