@@ -23,7 +23,7 @@ enum class State{
         /**
          * 当前刷新请求返回的数据为null或empty
          */
-        NO_MORE_DATA_REFRESH,
+        EMPTY_DATA_ON_REFRESH,
 
 
         NET_LOSE,

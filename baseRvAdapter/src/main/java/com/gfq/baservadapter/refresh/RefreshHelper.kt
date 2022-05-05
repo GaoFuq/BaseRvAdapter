@@ -510,16 +510,12 @@ class RefreshHelper<DataBean>(
                     if (adapter.dataList.isEmpty()) {
                         updateRefreshState(State.EMPTY_DATA)
                     } else {
-                        updateRefreshState(State.NO_MORE_DATA_REFRESH)
+                        updateRefreshState(State.EMPTY_DATA_ON_REFRESH)
                     }
                     smartRefreshLayout?.finishRefresh(true)
                 }
                 else -> {
-                    if (it.size >= dataPerPage) {
-                        updateRefreshState(State.REFRESH_SUCCESS)
-                    } else if (it.size < dataPerPage) {
-                        updateRefreshState(State.NO_MORE_DATA_REFRESH)
-                    }
+                    updateRefreshState(State.REFRESH_SUCCESS)
                     adapter.dataList = it.toMutableList()
                     smartRefreshLayout?.finishRefresh(true)
                 }
@@ -547,7 +543,7 @@ class RefreshHelper<DataBean>(
                 stateViewContainer.addView(it, -1, -1)
             }
             //刷新到空数据，默认不处理视图和数据集合。
-            State.NO_MORE_DATA_REFRESH -> {}
+            State.EMPTY_DATA_ON_REFRESH -> {}
             State.NO_MORE_DATA_LOADMORE -> stateViewLoadMoreNoMoreData?.isVisible = true
             State.REFRESH_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
             State.LOAD_MORE_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
