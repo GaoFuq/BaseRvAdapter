@@ -543,8 +543,8 @@ class RefreshHelper<DataBean>(
                 coverView = it
                 stateViewContainer.addView(it, -1, -1)
             }
-            //刷新到空数据，默认不处理视图和数据集合。
-            State.EMPTY_DATA_ON_REFRESH -> {}
+            //刷新到空数据，默认清空数据集合，展示空状态。
+            State.EMPTY_DATA_ON_REFRESH -> {setEmptyState()}
             State.NO_MORE_DATA_LOADMORE -> stateViewLoadMoreNoMoreData?.isVisible = true
             State.REFRESH_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
             State.LOAD_MORE_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
