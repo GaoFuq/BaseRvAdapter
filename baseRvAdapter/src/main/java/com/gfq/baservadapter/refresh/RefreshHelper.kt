@@ -26,7 +26,6 @@ import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
-import com.gfq.baservadapter.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -40,6 +39,7 @@ import kotlin.coroutines.CoroutineContext
  * *
  * * 自动创建的 RefreshHelper 才有 [topViewContainer],[bottomViewContainer]。
  * * 自动创建的 RefreshHelper [stateViewLoadMoreNoMoreData] 才会生效。
+ *  [callRefresh]
  */
 class RefreshHelper<DataBean>(
     val autoCreate: Boolean,
@@ -68,14 +68,13 @@ class RefreshHelper<DataBean>(
      * @see [updateRefreshState]
      */
     private val onStateChange: ((helper: RefreshHelper<DataBean>, state: State) -> Unit)? = null,
-) : LifecycleObserver {
+) {
 
     private val tag = "【RefreshHelper】"
 
 
     private var fetchFromCachedData = true
     private var isFirstCallRefresh = true
-
 
 
     //缓存的数据源
@@ -97,25 +96,19 @@ class RefreshHelper<DataBean>(
     var bottomViewContainer: FrameLayout? = null
         private set
 
-    var isAutoRefresh: Boolean = true
-    var isAutoRefreshOnResume: Boolean = false
-        set(value) {
-            field = value
-            if (value) {
-                isAutoRefresh = false
-            }
-        }
-
-    var isFirstAutoRefreshFromCacheNeedAnim: Boolean = false
-    var isFirstAutoRefreshFromNetNeedAnim: Boolean = true
-
-    var isEnableRefresh: Boolean = true
+    /**
+     * 设置是否可以手动下拉刷新。
+     */
+    var isEnablePullDownRefresh: Boolean = true
         set(value) {
             field = value
             smartRefreshLayout?.setEnableRefresh(value)
         }
 
-    var isEnableLoadMore: Boolean = true
+    /**
+     * 设置是否可以手动上拉加载。
+     */
+    var isEnablePullUpLoad: Boolean = true
         set(value) {
             field = value
             smartRefreshLayout?.setEnableLoadMore(value)
@@ -144,14 +137,16 @@ class RefreshHelper<DataBean>(
 
     init {
         if (activityOrFragment is ComponentActivity) {
-            activityOrFragment.lifecycle.addObserver(this)
             context = activityOrFragment
             Log.d(tag, "init context is ${activityOrFragment.componentName.className}")
         } else if (activityOrFragment is Fragment) {
-            activityOrFragment.lifecycle.addObserver(this)
             activityOrFragment.context?.let { context = it }
             Log.d(tag,
                 "init context is Fragment , name = ${activityOrFragment.javaClass.simpleName}")
+        }
+
+        if (!::context.isInitialized) {
+            throw RuntimeException("context is not initialized")
         }
 
         autoCreateIfNeed()
@@ -167,16 +162,16 @@ class RefreshHelper<DataBean>(
 
 
         smartRefreshLayout?.run {
-            setEnableLoadMore(isEnableLoadMore)
-            setEnableRefresh(isEnableRefresh)
+            setEnableLoadMore(isEnablePullUpLoad)
+            setEnableRefresh(isEnablePullDownRefresh)
             setRefreshHeader(MaterialHeader(context))
             setRefreshFooter(ClassicsFooter(context).setSpinnerStyle(SpinnerStyle.FixedBehind))
             setOnRefreshListener {
-                callRefresh()
+                callRefresh(false)
             }
 
             setOnLoadMoreListener {
-                callLoadMore()
+                callLoadMore(false)
             }
         }
 
@@ -186,14 +181,10 @@ class RefreshHelper<DataBean>(
 
     }
 
-
+    @Deprecated("", ReplaceWith("callRefresh()"))
     fun start() {
-        if (isAutoRefresh && isEnableRefresh) {
-            Log.d(tag, "autoRefresh")
-            callRefresh()
-        }
+        callRefresh(true)
     }
-
 
     /**
      * 添加一个数据到列表中。默认添加到列表的最后面。
@@ -283,20 +274,6 @@ class RefreshHelper<DataBean>(
         stateView?.emptyDataView(context, this)?.let { stateViewEmptyData = it }
     }
 
-    //没有上滑加载更多动画，直接发起请求
-    fun callLoadMore() {
-        if (fetchFromCachedData && !cachedDataList.isNullOrEmpty()) {
-            doLoadMoreFromCachedData()
-        } else {
-            cachedDataList = null
-            if (isNetworkConnected(context)) {
-                doLoadMore()
-            } else {
-                smartRefreshLayout?.finishLoadMore(false)
-                updateRefreshState(State.NET_LOSE)
-            }
-        }
-    }
 
     private fun doLoadMoreFromCachedData() {
         currentPage++
@@ -312,7 +289,7 @@ class RefreshHelper<DataBean>(
             if (dataList.isNullOrEmpty()) {
                 currentPage--
                 fetchFromCachedData = false
-                callLoadMore()
+                callLoadMore(true)
             } else {
                 addAll(dataList)
                 updateRefreshState(State.LOAD_MORE_SUCCESS)
@@ -341,28 +318,52 @@ class RefreshHelper<DataBean>(
         adapter.updateItemWhen({ filter(it) }) {
             adapter.remove(this)
             if (adapter.dataList.isEmpty()) {
-                callRefresh()
+                callRefresh(false)
             }
         }
     }
 
+    /**
+     * 加载更多
+     * @param withAnim 设置是否有上划动画
+     */
+    fun callLoadMore(withAnim: Boolean = false) {
+        if (fetchFromCachedData && !cachedDataList.isNullOrEmpty()) {
+            doLoadMoreFromCachedData()
+        } else {
+            cachedDataList = null
+            if (withAnim) {
+                smartRefreshLayout?.autoLoadMore()
+            } else {
+                if (isNetworkConnected(context)) {
+                    doLoadMore()
+                } else {
+                    smartRefreshLayout?.finishLoadMore(false)
+                    updateRefreshState(State.NET_LOSE)
+                }
+            }
+        }
+    }
 
     /**
-     * 手动调用该方法进行无下拉动画的刷新。
+     * 刷新
+     * @param withAnim 设置是否有下拉动画
      */
-    fun callRefresh() {
-        if (isFirstCallRefresh && fetchFromCachedData && (queryRAMCachedData != null || queryDBCachedData != null)) {//只有第一次刷新从缓存取数据
-            if (isFirstAutoRefreshFromCacheNeedAnim) {
-                isFirstAutoRefreshFromCacheNeedAnim = false
-                smartRefreshLayout?.autoRefresh()
-            } else {
-                callRefreshFetchCachedData()
-            }
+    fun callRefresh(withAnim: Boolean = true) {
+        //只有第一次刷新从缓存取数据
+        if (isFirstCallRefresh && fetchFromCachedData && (queryRAMCachedData != null || queryDBCachedData != null)) {
+            callRefreshFetchCachedData()
+            /*   从缓存获取数据是否需要下拉动画
+               if (withPullDownAnimForCache) {
+                   smartRefreshLayout?.autoRefresh()
+               } else {
+                   callRefreshFetchCachedData()
+               }
+            */
         } else {
             fetchFromCachedData = false
             cachedDataList = null
-            if (isFirstAutoRefreshFromNetNeedAnim) {
-                isFirstAutoRefreshFromNetNeedAnim = false
+            if (withAnim) {
                 smartRefreshLayout?.autoRefresh()
             } else {
                 if (isNetworkConnected(context)) {
@@ -376,6 +377,7 @@ class RefreshHelper<DataBean>(
     }
 
     private fun callRefreshFetchCachedData() {
+        updateRefreshState(State.LOADING)
         if (queryRAMCachedData != null) {
             queryRAMCachedData()
         } else if (queryDBCachedData != null) {
@@ -407,12 +409,7 @@ class RefreshHelper<DataBean>(
             if (cachedDataList.isNullOrEmpty()) {
                 fetchFromCachedData = false
                 launch(Dispatchers.Main) {
-                    if (isFirstAutoRefreshFromNetNeedAnim) {
-                        isFirstAutoRefreshFromNetNeedAnim = false
-                        smartRefreshLayout?.autoRefresh()
-                    } else {
-                        callRefresh()
-                    }
+                    callRefresh(true)
                 }
             } else {
                 launch(Dispatchers.Main) {
@@ -608,17 +605,6 @@ class RefreshHelper<DataBean>(
         return false
     }
 
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    fun autoRefreshOnResume() {
-        if (::context.isInitialized) {
-            if (isAutoRefreshOnResume && isEnableRefresh) {
-                Log.d(tag, "autoRefreshOnResume")
-                callRefresh()
-            }
-        }
-
-    }
 
     /**
      * 缓存数据分页
