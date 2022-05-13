@@ -5,6 +5,7 @@ import androidx.databinding.ViewDataBinding
 import androidx.recyclerview.widget.RecyclerView
 import com.gfq.baservadapter.adapter.BaseVH
 import com.gfq.baservadapter.refresh.get
+import com.luck.picture.lib.PictureSelector
 import com.luck.picture.lib.decoration.GridSpacingItemDecoration
 
 /**
@@ -14,7 +15,9 @@ import com.luck.picture.lib.decoration.GridSpacingItemDecoration
  */
 internal class Simple {
     lateinit var adapter: PhotoAlbumDefaultAdapter
-    fun useSimple(itemLayoutResId: Int = 0, recyclerView: RecyclerView) {
+    fun useSimple(activityOrFragment:Any,itemLayoutResId: Int = 0, recyclerView: RecyclerView) {
+
+        val pictureSelector: PictureSelector = createPictureSelector(activityOrFragment)
 
         adapter = object : PhotoAlbumDefaultAdapter(this,
             itemLayoutResId,
