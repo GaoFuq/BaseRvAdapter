@@ -196,7 +196,7 @@ abstract class BaseRVAdapter<DataBean>
         if (position >= 0 && position < dataList.size) {
             block()
         } else {
-            Log.w("【BaseRVAdapter WARN】", "position 非法 = $position")
+            Log.e("【BaseRVAdapter WARN】", "position 非法 = $position")
         }
     }
 
@@ -204,7 +204,7 @@ abstract class BaseRVAdapter<DataBean>
         if (position >= 0 && position <= dataList.size) {
             block()
         } else {
-            Log.w("【BaseRVAdapter WARN】", "position 非法 = $position")
+            Log.e("【BaseRVAdapter WARN】", "position 非法 = $position")
         }
     }
 
@@ -213,7 +213,7 @@ abstract class BaseRVAdapter<DataBean>
         if (data is RVSelect) {
             block(data as RVSelect)
         } else {
-            Log.e("【BaseRVAdapter】", "${data!!::class.java.name} require extends RVSelectBean")
+            Log.w("【BaseRVAdapter】", "${data!!::class.java.name} is not RVSelect")
         }
     }
 
