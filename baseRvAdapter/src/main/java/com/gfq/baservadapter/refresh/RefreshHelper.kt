@@ -8,16 +8,14 @@ import android.net.NetworkInfo
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
-import androidx.core.view.isGone
-import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.*
+import androidx.recyclerview.widget.*
 import com.gfq.baservadapter.R
 import com.gfq.baservadapter.adapter.BaseRVAdapter
 import com.gfq.baservadapter.databinding.RefreshHelperLayoutBinding
@@ -25,10 +23,6 @@ import com.scwang.smart.refresh.footer.ClassicsFooter
 import com.scwang.smart.refresh.header.MaterialHeader
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import com.scwang.smart.refresh.layout.constant.SpinnerStyle
-import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.*
-import androidx.recyclerview.widget.SimpleItemAnimator
-import com.scwang.smart.refresh.footer.BallPulseFooter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -110,6 +104,20 @@ class RefreshHelper<DataBean>(
             smartRefreshLayout?.setEnableLoadMore(value)
         }
 
+    /**
+     * 设置是否开启预加载。
+     */
+    var isEnablePreLoadMore: Boolean = true
+        set(value) {
+            field = value
+            if (field) {
+                recyclerView?.addOnScrollListener(autoLoadMoreListener)
+            } else {
+                recyclerView?.removeOnScrollListener(autoLoadMoreListener)
+            }
+
+        }
+
     private var state: State = State.NONE
 
     //当前覆盖在 recyclerView 之上的view
@@ -121,6 +129,29 @@ class RefreshHelper<DataBean>(
     var stateViewNetLose: View? = null
     var stateViewError: View? = null
 
+
+    private val autoLoadMoreListener = object : RecyclerView.OnScrollListener() {
+        override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                val layoutManager = recyclerView.layoutManager
+                if (layoutManager is LinearLayoutManager) {
+                    val lastItemPosition: Int =
+                        layoutManager.findLastCompletelyVisibleItemPosition()
+                    if (lastItemPosition == adapter.itemCount - 1
+                        && smartRefreshLayout?.isLoading == false
+                        && smartRefreshLayout?.isRefreshing == false
+                    ) {
+                        callLoadMore(false)
+                    }
+                }
+            }
+
+        }
+
+        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+
+        }
+    }
 
     init {
         if (activityOrFragment is ComponentActivity) {
@@ -147,6 +178,8 @@ class RefreshHelper<DataBean>(
 
         recyclerView?.setHasFixedSize(true)
 
+        isEnablePreLoadMore = false
+
         smartRefreshLayout?.run {
             setEnableLoadMore(isEnablePullUpLoad)
             setEnableRefresh(isEnablePullDownRefresh)
@@ -163,16 +196,6 @@ class RefreshHelper<DataBean>(
             }
         }
         initStateView()
-
-        recyclerView?.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-
-            }
-
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-
-            }
-        })
     }
 
 
@@ -248,9 +271,9 @@ class RefreshHelper<DataBean>(
         } else {
             Log.d(tag, "user xml create")
             val tempView = smartRefreshLayout?.findViewById<FrameLayout>(R.id.stateViewContainer)
-            if(tempView==null){
+            if (tempView == null) {
                 throw RuntimeException("必须设置一个 id = stateViewContainer 的 FrameLayout 作为状态容器")
-            }else{
+            } else {
                 stateViewContainer = tempView
             }
         }
