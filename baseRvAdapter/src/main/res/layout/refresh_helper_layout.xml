@@ -18,36 +18,43 @@
             android:layout_height="match_parent"
             tools:background="#333">
 
-            <androidx.core.widget.NestedScrollView
-                android:id="@+id/nestedScrollView"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                tools:background="#666">
+                android:layout_height="match_parent"
+               />
 
-                <LinearLayout
+
+            <!--
+
+            <androidx.coordinatorlayout.widget.CoordinatorLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <com.google.android.material.appbar.AppBarLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:background="@android:color/transparent"
+                    app:elevation="0dp">
 
                     <FrameLayout
                         android:id="@+id/topViewContainer"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerView"
-                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:overScrollMode="never" />
+                        app:layout_scrollFlags="scroll">
 
-                    <FrameLayout
-                        android:id="@+id/bottomViewContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
+                    </FrameLayout>
+                </com.google.android.material.appbar.AppBarLayout>
 
-                </LinearLayout>
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
+            </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-            </androidx.core.widget.NestedScrollView>
+            -->
+
         </FrameLayout>
 
     </com.scwang.smart.refresh.layout.SmartRefreshLayout>

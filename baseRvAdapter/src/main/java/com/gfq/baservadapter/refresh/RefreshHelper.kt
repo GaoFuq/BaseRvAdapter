@@ -8,6 +8,7 @@ import android.net.NetworkInfo
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
@@ -26,20 +27,21 @@ import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
+import androidx.recyclerview.widget.SimpleItemAnimator
+import com.scwang.smart.refresh.footer.BallPulseFooter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
 /**
+ * *SmartRefreshLayout api文档 [https://gitee.com/scwang90/SmartRefreshLayout/raw/V-ART/art/md_property.md]
+ *
  * * 自动创建布局：[R.layout.refresh_helper_layout]
  * * 自动创建：[FragmentActivity.refreshHelperAutoCreate]。
  * * 自动创建：[Fragment.refreshHelperAutoCreate]。
  * * 手动创建：[FragmentActivity.refreshHelperNormalCreate]。
  * * 手动创建：[Fragment.refreshHelperNormalCreate]。
  * *
- * * 自动创建的 RefreshHelper 才有 [topViewContainer],[bottomViewContainer]。
- * * 自动创建的 RefreshHelper [stateViewLoadMoreNoMoreData] 才会生效。
- *  [callRefresh]
  */
 class RefreshHelper<DataBean>(
     val autoCreate: Boolean,
@@ -52,11 +54,7 @@ class RefreshHelper<DataBean>(
     /**
      * 每页数据量
      */
-    private val dataPerPage: Int = 10,
-    /**
-     * 总页数
-     */
-    private val totalPage: Int = 999,
+    private val dataPerPage: Int,
     var smartRefreshLayout: SmartRefreshLayout? = null,
     var recyclerView: RecyclerView? = null,
     private val stateView: IStateView? = null,
@@ -71,6 +69,11 @@ class RefreshHelper<DataBean>(
 ) {
 
     private val tag = "【RefreshHelper】"
+
+    /**
+     * 总页数
+     */
+    var totalPage: Int = 999
 
 
     private var fetchFromCachedData = true
@@ -88,13 +91,6 @@ class RefreshHelper<DataBean>(
     lateinit var stateViewContainer: FrameLayout
         private set
 
-    //在 recyclerView 上面的 view 容器
-    var topViewContainer: FrameLayout? = null
-        private set
-
-    //在 recyclerView 下面的 view 容器
-    var bottomViewContainer: FrameLayout? = null
-        private set
 
     /**
      * 设置是否可以手动下拉刷新。
@@ -125,15 +121,6 @@ class RefreshHelper<DataBean>(
     var stateViewNetLose: View? = null
     var stateViewError: View? = null
 
-    //加载更多，没有更多数据时，显示在最下方的view
-    var stateViewLoadMoreNoMoreData: View? = null
-        set(value) {
-            field = value
-            if (value != null) {
-                bottomViewContainer?.addView(value)
-                value.isGone = true
-            }
-        }
 
     init {
         if (activityOrFragment is ComponentActivity) {
@@ -152,19 +139,20 @@ class RefreshHelper<DataBean>(
         autoCreateIfNeed()
 
 
-        if (adapter.recyclerView == null) {
-            adapter.recyclerView = recyclerView
-        }
+//        setSupportChangeAnimation(false)
 
         if (recyclerView?.layoutManager == null) {
             recyclerView?.layoutManager = LinearLayoutManager(context)
         }
 
+        recyclerView?.setHasFixedSize(true)
 
         smartRefreshLayout?.run {
             setEnableLoadMore(isEnablePullUpLoad)
             setEnableRefresh(isEnablePullDownRefresh)
             setRefreshHeader(MaterialHeader(context))
+            setEnableLoadMoreWhenContentNotFull(false)
+            setEnableFooterFollowWhenNoMoreData(true)
             setRefreshFooter(ClassicsFooter(context).setSpinnerStyle(SpinnerStyle.FixedBehind))
             setOnRefreshListener {
                 callRefresh(false)
@@ -174,22 +162,29 @@ class RefreshHelper<DataBean>(
                 callLoadMore(false)
             }
         }
-
-
-
         initStateView()
 
+        recyclerView?.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+
+            }
+
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+
+            }
+        })
     }
 
-    @Deprecated("", ReplaceWith("callRefresh()"))
-    fun start() {
-        callRefresh(true)
+
+    fun setSupportChangeAnimation(boolean: Boolean) {
+        (recyclerView?.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = boolean
     }
+
 
     /**
      * 添加一个数据到列表中。默认添加到列表的最后面。
      */
-    fun addData(data: DataBean?, position: Int = -1) {
+    fun addData(data: DataBean?, position: Int = adapter.dataList.size) {
         if (data == null) {
             if (adapter.dataList.isEmpty()) {
                 updateRefreshState(State.EMPTY_DATA)
@@ -205,7 +200,7 @@ class RefreshHelper<DataBean>(
 
 
     /**
-     * 重新设置数据源，会覆盖之前的所有数据
+     * 设置数据源，会覆盖之前的所有数据
      */
     fun setData(list: List<DataBean>?) {
         if (list.isNullOrEmpty()) {
@@ -222,15 +217,15 @@ class RefreshHelper<DataBean>(
     }
 
     /**
-     * 添加一个数据集合到列表的最后
+     * 添加一个数据集合
      */
-    fun addAll(list: List<DataBean>?) {
+    fun addAll(list: List<DataBean>?, position: Int = adapter.dataList.size) {
         if (list.isNullOrEmpty()) {
             if (adapter.dataList.isEmpty()) {
                 updateRefreshState(State.EMPTY_DATA)
             }
         } else {
-            adapter.addAll(list)
+            adapter.addAll(list, position)
             coverView?.let {
                 stateViewContainer.removeView(it)
                 coverView = null
@@ -250,15 +245,13 @@ class RefreshHelper<DataBean>(
             smartRefreshLayout = binding.smartRefreshLayout
             recyclerView = binding.recyclerView
             stateViewContainer = binding.stateViewContainer
-            topViewContainer = binding.topViewContainer
-            bottomViewContainer = binding.bottomViewContainer
         } else {
             Log.d(tag, "user xml create")
-            val parent = this.recyclerView?.parent
-            if (parent != null && parent is FrameLayout) {
-                stateViewContainer = parent
-            } else {
-                throw RuntimeException("recyclerView  的 parentView 必须是 FrameLayout")
+            val tempView = smartRefreshLayout?.findViewById<FrameLayout>(R.id.stateViewContainer)
+            if(tempView==null){
+                throw RuntimeException("必须设置一个 id = stateViewContainer 的 FrameLayout 作为状态容器")
+            }else{
+                stateViewContainer = tempView
             }
         }
     }
@@ -268,7 +261,6 @@ class RefreshHelper<DataBean>(
         stateViewEmptyData = TextView(context).apply { text = "空页面" }
         stateViewLoading = stateView?.loadingView(context, this)
 
-        stateViewLoadMoreNoMoreData = stateView?.emptyDataWithLoadMoreView(context, this)
         stateViewNetLose = stateView?.netLoseView(context, this)
 
         stateView?.emptyDataView(context, this)?.let { stateViewEmptyData = it }
@@ -353,13 +345,6 @@ class RefreshHelper<DataBean>(
         //只有第一次刷新从缓存取数据
         if (isFirstCallRefresh && fetchFromCachedData && (queryRAMCachedData != null || queryDBCachedData != null)) {
             callRefreshFetchCachedData()
-            /*   从缓存获取数据是否需要下拉动画
-               if (withPullDownAnimForCache) {
-                   smartRefreshLayout?.autoRefresh()
-               } else {
-                   callRefreshFetchCachedData()
-               }
-            */
         } else {
             fetchFromCachedData = false
             cachedDataList = null
@@ -513,12 +498,12 @@ class RefreshHelper<DataBean>(
                     } else {
                         updateRefreshState(State.EMPTY_DATA_ON_REFRESH)
                     }
-                    smartRefreshLayout?.finishRefresh(true)
+                    smartRefreshLayout?.finishRefresh()
                 }
                 else -> {
                     updateRefreshState(State.REFRESH_SUCCESS)
                     adapter.dataList = it.toMutableList()
-                    smartRefreshLayout?.finishRefresh(true)
+                    smartRefreshLayout?.finishRefresh()
                 }
             }
         }
@@ -544,10 +529,12 @@ class RefreshHelper<DataBean>(
                 stateViewContainer.addView(it, -1, -1)
             }
             //刷新到空数据，默认清空数据集合，展示空状态。
-            State.EMPTY_DATA_ON_REFRESH -> {setEmptyState()}
-            State.NO_MORE_DATA_LOADMORE -> stateViewLoadMoreNoMoreData?.isVisible = true
-            State.REFRESH_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
-            State.LOAD_MORE_SUCCESS -> stateViewLoadMoreNoMoreData?.isGone = true
+            State.EMPTY_DATA_ON_REFRESH -> {
+                setEmptyState()
+            }
+            State.NO_MORE_DATA_LOADMORE -> {}
+            State.REFRESH_SUCCESS -> {}
+            State.LOAD_MORE_SUCCESS -> {}
 
             State.NET_LOSE -> stateViewNetLose?.let {
                 coverView = it
@@ -631,7 +618,7 @@ class RefreshHelper<DataBean>(
 
 
     /**
-     * 外部主动设置当前的刷新状态，不会触发 onStateChange
+     * 外部主动设置当前的状态，不会触发 onStateChange
      */
     fun setEmptyState() {
         if (this.state == State.EMPTY_DATA) return
@@ -648,7 +635,7 @@ class RefreshHelper<DataBean>(
     }
 
     /**
-     * 外部主动设置当前的刷新状态，不会触发 onStateChange
+     * 外部主动设置当前的状态，不会触发 onStateChange
      */
     fun setErrorState() {
         if (this.state == State.ERROR) return
