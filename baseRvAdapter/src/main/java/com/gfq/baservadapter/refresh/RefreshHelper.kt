@@ -55,11 +55,6 @@ class RefreshHelper<DataBean>(
     private val queryRAMCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
     private val queryDBCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
     private val requestData: ((curPage: Int, dataPerPage: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
-    /**
-     * @return 是否拦截状态视图的显示处理。默认会显示[stateView]提供的View，并且该View会覆盖recyclerView。
-     * @see [updateRefreshState]
-     */
-    private val onStateChange: ((helper: RefreshHelper<DataBean>, state: State) -> Unit)? = null,
 ) {
 
     private val tag = "【RefreshHelper】"
@@ -85,6 +80,28 @@ class RefreshHelper<DataBean>(
     lateinit var stateViewContainer: FrameLayout
         private set
 
+    /**
+     *  每一个 state 都会回调，可能有连续相同的 state
+     *  @see updateRefreshState
+     */
+    private var onNextStateListenerList: ArrayList<OnNextStateListener<DataBean>>? = null
+
+    /**
+     * 当 state 发生改变时回调。
+     * @see updateRefreshState
+     */
+    var onStateChangeListener: OnStateChangeListener<DataBean>? = null
+
+    fun addOnNextStateListener(listener: OnNextStateListener<DataBean>) {
+        if (onNextStateListenerList == null) {
+            onNextStateListenerList = arrayListOf()
+        }
+        onNextStateListenerList?.add(listener)
+    }
+
+    fun removeOnNextStateListener(listener: OnNextStateListener<DataBean>) {
+        onNextStateListenerList?.remove(listener)
+    }
 
     /**
      * 设置是否可以手动下拉刷新。
@@ -141,6 +158,7 @@ class RefreshHelper<DataBean>(
                         && smartRefreshLayout?.isLoading == false
                         && smartRefreshLayout?.isRefreshing == false
                     ) {
+                        Log.e(tag, "preLoadMore: currentPage = $currentPage")
                         callLoadMore(false)
                     }
                 }
@@ -170,13 +188,17 @@ class RefreshHelper<DataBean>(
         autoCreateIfNeed()
 
 
-//        setSupportChangeAnimation(false)
 
-        if (recyclerView?.layoutManager == null) {
-            recyclerView?.layoutManager = LinearLayoutManager(context)
+
+        recyclerView?.run {
+            if (layoutManager == null) {
+                layoutManager = LinearLayoutManager(context)
+            }
+            this.adapter = this@RefreshHelper.adapter
+            setHasFixedSize(true)
+            setSupportChangeAnimation(false)
         }
 
-        recyclerView?.setHasFixedSize(true)
 
         isEnablePreLoadMore = false
 
@@ -307,13 +329,13 @@ class RefreshHelper<DataBean>(
                 callLoadMore(true)
             } else {
                 addAll(dataList)
-                updateRefreshState(State.LOAD_MORE_SUCCESS)
                 smartRefreshLayout?.finishLoadMore(true)
+                updateRefreshState(State.LOAD_MORE_SUCCESS)
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            updateRefreshState(State.ERROR)
             smartRefreshLayout?.finishLoadMore(false)
+            updateRefreshState(State.ERROR)
         }
     }
 
@@ -401,13 +423,13 @@ class RefreshHelper<DataBean>(
             queryDBCachedData()
         } else {
             val splitPage = splitPage(1, dataPerPage, cachedDataList)
+            setData(splitPage)
+            smartRefreshLayout?.finishRefresh(true)
             if (splitPage.isNullOrEmpty() && adapter.dataList.isEmpty()) {
                 updateRefreshState(State.EMPTY_DATA)
             } else {
                 updateRefreshState(State.REFRESH_SUCCESS)
             }
-            setData(splitPage)
-            smartRefreshLayout?.finishRefresh(true)
         }
     }
 
@@ -422,13 +444,13 @@ class RefreshHelper<DataBean>(
             } else {
                 launch(Dispatchers.Main) {
                     val splitPage = splitPage(1, dataPerPage, cachedDataList)
+                    setData(splitPage)
+                    smartRefreshLayout?.finishRefresh(true)
                     if (splitPage.isNullOrEmpty() && adapter.dataList.isEmpty()) {
                         updateRefreshState(State.EMPTY_DATA)
                     } else {
                         updateRefreshState(State.REFRESH_SUCCESS)
                     }
-                    setData(splitPage)
-                    smartRefreshLayout?.finishRefresh(true)
                 }
             }
         }
@@ -484,13 +506,13 @@ class RefreshHelper<DataBean>(
                 }
                 else -> {
                     if (it.size >= dataPerPage) {
-                        updateRefreshState(State.LOAD_MORE_SUCCESS)
                         adapter.addAll(it.toMutableList())
                         smartRefreshLayout?.finishLoadMore(true)
+                        updateRefreshState(State.LOAD_MORE_SUCCESS)
                     } else if (it.size < dataPerPage) {
-                        updateRefreshState(State.NO_MORE_DATA_LOADMORE)
                         adapter.addAll(it.toMutableList())
                         smartRefreshLayout?.finishLoadMoreWithNoMoreData()
+                        updateRefreshState(State.NO_MORE_DATA_LOADMORE)
                     }
 
                 }
@@ -524,9 +546,9 @@ class RefreshHelper<DataBean>(
                     smartRefreshLayout?.finishRefresh()
                 }
                 else -> {
-                    updateRefreshState(State.REFRESH_SUCCESS)
                     adapter.dataList = it.toMutableList()
                     smartRefreshLayout?.finishRefresh()
+                    updateRefreshState(State.REFRESH_SUCCESS)
                 }
             }
         }
@@ -534,13 +556,15 @@ class RefreshHelper<DataBean>(
 
 
     private fun updateRefreshState(state: State) {
+        onNextStateListenerList?.forEach { it.onNext(this, state) }
+
         if (this.state == state) return
         this.state = state
         coverView?.let {
             stateViewContainer.removeView(it)
             coverView = null
         }
-        Log.d(tag, "onStateChange state = " + state.name)
+
         //默认处理
         when (state) {
             State.LOADING -> stateViewLoading?.let {
@@ -571,7 +595,7 @@ class RefreshHelper<DataBean>(
             State.NONE -> {}
         }
         //覆盖默认的处理
-        onStateChange?.invoke(this, state)
+        onStateChangeListener?.onStateChange(this, state)
     }
 
 
@@ -641,7 +665,7 @@ class RefreshHelper<DataBean>(
 
 
     /**
-     * 外部主动设置当前的状态，不会触发 onStateChange
+     * 外部主动设置当前的状态，不会触发 onStateChangeListener
      */
     fun setEmptyState() {
         if (this.state == State.EMPTY_DATA) return
@@ -658,7 +682,7 @@ class RefreshHelper<DataBean>(
     }
 
     /**
-     * 外部主动设置当前的状态，不会触发 onStateChange
+     * 外部主动设置当前的状态，不会触发 onStateChangeListener
      */
     fun setErrorState() {
         if (this.state == State.ERROR) return
