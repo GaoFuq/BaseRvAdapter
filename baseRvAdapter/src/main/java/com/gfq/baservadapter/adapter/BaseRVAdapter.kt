@@ -7,8 +7,8 @@ import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.SimpleItemAnimator
-import com.gfq.baservadapter.refresh.RVSelect
+import com.gfq.baservadapter.refresh.RefreshHelper
+import com.gfq.baservadapter.refresh.State
 
 
 /**
@@ -95,7 +95,7 @@ abstract class BaseRVAdapter<DataBean>
     fun updateItem(position: Int, data: DataBean) {
         whenPositionLegit(position) {
             dataList[position] = data
-            notifyItemChanged(position,"changed")
+            notifyItemChanged(position, "changed")
         }
     }
 
@@ -107,7 +107,7 @@ abstract class BaseRVAdapter<DataBean>
     fun updateItem(position: Int, update: DataBean.() -> Unit) {
         whenPositionLegit(position) {
             update(dataList[position])
-            notifyItemChanged(position,"changed")
+            notifyItemChanged(position, "changed")
         }
     }
 
@@ -154,4 +154,24 @@ abstract class BaseRVAdapter<DataBean>
 
     override fun getItemCount(): Int = dataList.size
 
+
+    private var helper: RefreshHelper<DataBean>? = null
+
+
+    override fun onViewAttachedToWindow(holder: BaseVH) {
+        if(helper?.isEnablePreLoadMore==true) {
+            if (itemCount - holder.bindingAdapterPosition == helper?.preLoadMoreItemCount
+                && helper?.isLoadMore == false
+                && helper?.state != State.LOAD_MORE_NO_MORE_DATA
+            ) {
+                helper?.callLoadMore(false)
+            }
+        }
+    }
+
+
+
+    fun onAttachedToRefreshHelper(helper: RefreshHelper<DataBean>) {
+        this.helper = helper
+    }
 }

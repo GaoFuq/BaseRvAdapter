@@ -10,7 +10,7 @@ import com.gfq.baservadapter.refresh.RVSelect
  * @auth gaofuq
  * @description
  */
-abstract class BaseRVSelectAdapter<DataBean>(@LayoutRes private val itemLayoutRes: Int) :
+abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val itemLayoutRes: Int) :
     BaseRVAdapter<DataBean>(itemLayoutRes) {
 
     val NO_POSITION = -1
@@ -22,13 +22,11 @@ abstract class BaseRVSelectAdapter<DataBean>(@LayoutRes private val itemLayoutRe
     override fun onBindViewHolder(holder: BaseVH, position: Int) {
         super.onBindViewHolder(holder, position)
 
-        if (dataList[position] is RVSelect) {
-            val data = dataList[position] as RVSelect
-            if (data.select) {
-                onItemSelected(holder, dataList[position], position)
-            } else {
-                onItemNotSelect(holder, dataList[position], position)
-            }
+        val data = dataList[position]
+        if (data.select) {
+            onItemSelected(holder, dataList[position], position)
+        } else {
+            onItemNotSelect(holder, dataList[position], position)
         }
     }
 
@@ -53,9 +51,9 @@ abstract class BaseRVSelectAdapter<DataBean>(@LayoutRes private val itemLayoutRe
     }
 
     override fun removeAt(position: Int): DataBean? {
-        val result =  super.removeAt(position)
-        whenPositionLegit(position){
-            whenDataIsRVSelect(dataList[position]) { lastSelectedPosition = NO_POSITION }
+        val result = super.removeAt(position)
+        whenPositionLegit(position) {
+            lastSelectedPosition = NO_POSITION
         }
         return result
     }
@@ -64,6 +62,7 @@ abstract class BaseRVSelectAdapter<DataBean>(@LayoutRes private val itemLayoutRe
         super.clear()
         lastSelectedPosition = NO_POSITION
     }
+
     /**
      * 单选
      */
@@ -71,15 +70,13 @@ abstract class BaseRVSelectAdapter<DataBean>(@LayoutRes private val itemLayoutRe
         if (dataList.isEmpty()) return
 
         whenPositionLegit(position) {
-            whenDataIsRVSelect(dataList[position]) {
-                if (lastSelectedPosition == position) {
-                    setItemReSelect(holder, position)
-                } else {
-                    setItemSelected(position)
-                    setItemCancelSelect(lastSelectedPosition)
-                }
-                lastSelectedPosition = position
+            if (lastSelectedPosition == position) {
+                setItemReSelect(holder, position)
+            } else {
+                setItemSelected(position)
+                setItemCancelSelect(lastSelectedPosition)
             }
+            lastSelectedPosition = position
         }
     }
 
@@ -96,20 +93,18 @@ abstract class BaseRVSelectAdapter<DataBean>(@LayoutRes private val itemLayoutRe
         if (dataList.isEmpty()) return
 
         whenPositionLegit(position) {
-            whenDataIsRVSelect(dataList[position]) {
-                if (it.select) {
-                    if (interceptReSelect) {
-                        setItemReSelect(holder, position)
-                    } else {
-                        setItemCancelSelect(position)
-                    }
+            if (dataList[position].select) {
+                if (interceptReSelect) {
+                    setItemReSelect(holder, position)
                 } else {
-                    if (maxSelectCount <= 0) {
-                        setItemSelected(position)
-                    } else {
-                        if (getMultipleSelectedCount() >= maxSelectCount) {
-                            onCountOverMax?.invoke()
-                        }
+                    setItemCancelSelect(position)
+                }
+            } else {
+                if (maxSelectCount <= 0) {
+                    setItemSelected(position)
+                } else {
+                    if (getMultipleSelectedCount() >= maxSelectCount) {
+                        onCountOverMax?.invoke()
                     }
                 }
             }
@@ -124,9 +119,7 @@ abstract class BaseRVSelectAdapter<DataBean>(@LayoutRes private val itemLayoutRe
     fun doAllSelect() {
         if (dataList.isEmpty()) return
         dataList.forEach { dataBean ->
-            whenDataIsRVSelect(dataBean) {
-                it.select = true
-            }
+            dataBean.select = true
         }
         notifyDataSetChanged()
     }
@@ -138,9 +131,7 @@ abstract class BaseRVSelectAdapter<DataBean>(@LayoutRes private val itemLayoutRe
     fun doReverseSelect() {
         if (dataList.isEmpty()) return
         dataList.forEach { dataBean ->
-            whenDataIsRVSelect(dataBean) {
-                it.select = !it.select
-            }
+            dataBean.select = !dataBean.select
         }
         notifyDataSetChanged()
     }
@@ -148,52 +139,36 @@ abstract class BaseRVSelectAdapter<DataBean>(@LayoutRes private val itemLayoutRe
 
     fun setItemReSelect(holder: BaseVH, position: Int) {
         whenPositionLegit(position) {
-            whenDataIsRVSelect(dataList[position]) {
-                Log.d("【BaseRVAdapter】", "setItemReSelect position = $position")
-                onItemReSelect(holder, dataList[position], position)
-            }
+            Log.d("【BaseRVAdapter】", "setItemReSelect position = $position")
+            onItemReSelect(holder, dataList[position], position)
         }
 
     }
 
     fun setItemSelected(position: Int) {
         whenPositionLegit(position) {
-            whenDataIsRVSelect(dataList[position]) {
-                Log.d("【BaseRVAdapter】", "setItemSelected position = $position")
-                it.select = true
-                notifyItemChanged(position)
-            }
-
+            Log.d("【BaseRVAdapter】", "setItemSelected position = $position")
+            dataList[position].select = true
+            notifyItemChanged(position,"selectChanged")
         }
     }
 
 
     fun setItemCancelSelect(position: Int) {
         whenPositionLegit(position) {
-            whenDataIsRVSelect(dataList[position]) {
-                Log.d("【BaseRVAdapter】", "setItemCancelSelect position = $position")
-                it.select = false
-                notifyItemChanged(position)
-            }
+            Log.d("【BaseRVAdapter】", "setItemCancelSelect position = $position")
+            dataList[position].select = false
+            notifyItemChanged(position,"selectChanged")
         }
     }
 
     fun getMultipleSelectedCount() = getMultipleSelectDataList().count()
 
     fun getMultipleSelectDataList(): List<DataBean> =
-        dataList.filter { (it is RVSelect && it.select) }
+        dataList.filter { it.select }
 
     fun getSingleSelectData(): DataBean? =
-        dataList.firstOrNull { (it is RVSelect && it.select) }
-
-
-    protected fun whenDataIsRVSelect(data: DataBean, block: (RVSelect) -> Unit) {
-        if (data is RVSelect) {
-            block(data as RVSelect)
-        } else {
-            Log.w("【BaseRVAdapter】", "${data!!::class.java.name} is not RVSelect")
-        }
-    }
+        dataList.firstOrNull { it.select }
 
 
     open fun onItemSelected(holder: BaseVH, data: DataBean, position: Int) {}

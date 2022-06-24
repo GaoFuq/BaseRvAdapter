@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.*
+import com.gfq.baservadapter.PagerSnapHelperZ
 import com.gfq.baservadapter.R
 import com.gfq.baservadapter.adapter.BaseRVAdapter
 import com.gfq.baservadapter.databinding.RefreshHelperLayoutBinding
@@ -59,6 +60,9 @@ class RefreshHelper<DataBean>(
 
     private val tag = "【RefreshHelper】"
 
+    lateinit var context: Context
+        private set
+
     /**
      * 总页数
      */
@@ -67,14 +71,8 @@ class RefreshHelper<DataBean>(
 
     private var fetchFromCachedData = true
     private var isFirstCallRefresh = true
-
-
     //缓存的数据源
     private var cachedDataList: List<DataBean>? = null
-
-
-    lateinit var context: Context
-        private set
 
     //recyclerView 的容器；无网络，无数据等视图显示的区域
     lateinit var stateViewContainer: FrameLayout
@@ -84,7 +82,7 @@ class RefreshHelper<DataBean>(
      *  每一个 state 都会回调，可能有连续相同的 state
      *  @see updateRefreshState
      */
-    private var onNextStateListenerList: ArrayList<OnNextStateListener<DataBean>>? = null
+    private var onStateSequenceListenerList: ArrayList<OnStateSequenceListener<DataBean>>? = null
 
     /**
      * 当 state 发生改变时回调。
@@ -92,15 +90,15 @@ class RefreshHelper<DataBean>(
      */
     var onStateChangeListener: OnStateChangeListener<DataBean>? = null
 
-    fun addOnNextStateListener(listener: OnNextStateListener<DataBean>) {
-        if (onNextStateListenerList == null) {
-            onNextStateListenerList = arrayListOf()
+    fun addOnStateSequenceListener(listener: OnStateSequenceListener<DataBean>) {
+        if (onStateSequenceListenerList == null) {
+            onStateSequenceListenerList = arrayListOf()
         }
-        onNextStateListenerList?.add(listener)
+        onStateSequenceListenerList?.add(listener)
     }
 
-    fun removeOnNextStateListener(listener: OnNextStateListener<DataBean>) {
-        onNextStateListenerList?.remove(listener)
+    fun removeOnStateSequenceListener(listener: OnStateSequenceListener<DataBean>) {
+        onStateSequenceListenerList?.remove(listener)
     }
 
     /**
@@ -123,53 +121,38 @@ class RefreshHelper<DataBean>(
 
     /**
      * 设置是否开启预加载。
+     * true  开启预加载并关闭上拉加载
+     * false 关闭预加载并开启上拉加载
      */
     var isEnablePreLoadMore: Boolean = true
         set(value) {
             field = value
-            if (field) {
-                recyclerView?.addOnScrollListener(autoLoadMoreListener)
-            } else {
-                recyclerView?.removeOnScrollListener(autoLoadMoreListener)
-            }
-
+            isEnablePullUpLoad = !value
         }
 
-    private var state: State = State.NONE
+    /**
+     * 是否正在加载更多
+     */
+    var isLoadMore = false
+        private set
+
+    var isPagerStyle = false
+
+    //开始预加载更多的item剩余个数
+    var preLoadMoreItemCount = dataPerPage / 2
+
+    var state: State = State.NONE
+        private set
 
     //当前覆盖在 recyclerView 之上的view
     private var coverView: View? = null
 
     //覆盖 recyclerView 的状态view
-    var stateViewLoading: View? = null
+    var stateViewRefreshStart: View? = null
     var stateViewEmptyData: View? = null
     var stateViewNetLose: View? = null
     var stateViewError: View? = null
 
-
-    private val autoLoadMoreListener = object : RecyclerView.OnScrollListener() {
-        override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                val layoutManager = recyclerView.layoutManager
-                if (layoutManager is LinearLayoutManager) {
-                    val lastItemPosition: Int =
-                        layoutManager.findLastCompletelyVisibleItemPosition()
-                    if (lastItemPosition == adapter.itemCount - 1
-                        && smartRefreshLayout?.isLoading == false
-                        && smartRefreshLayout?.isRefreshing == false
-                    ) {
-                        Log.e(tag, "preLoadMore: currentPage = $currentPage")
-                        callLoadMore(false)
-                    }
-                }
-            }
-
-        }
-
-        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-
-        }
-    }
 
     init {
         if (activityOrFragment is ComponentActivity) {
@@ -202,6 +185,8 @@ class RefreshHelper<DataBean>(
 
         isEnablePreLoadMore = false
 
+        adapter.onAttachedToRefreshHelper(this)
+
         smartRefreshLayout?.run {
             setEnableLoadMore(isEnablePullUpLoad)
             setEnableRefresh(isEnablePullDownRefresh)
@@ -216,6 +201,10 @@ class RefreshHelper<DataBean>(
             setOnLoadMoreListener {
                 callLoadMore(false)
             }
+        }
+
+        if(isPagerStyle){
+            PagerSnapHelperZ().attachToRecyclerView(recyclerView)
         }
         initStateView()
     }
@@ -304,7 +293,7 @@ class RefreshHelper<DataBean>(
 
     private fun initStateView() {
         stateViewEmptyData = TextView(context).apply { text = "空页面" }
-        stateViewLoading = stateView?.loadingView(context, this)
+        stateViewRefreshStart = stateView?.loadingView(context, this)
 
         stateViewNetLose = stateView?.netLoseView(context, this)
 
@@ -316,7 +305,7 @@ class RefreshHelper<DataBean>(
         currentPage++
         if (currentPage > totalPage) {
             currentPage = totalPage
-            updateRefreshState(State.NO_MORE_DATA_LOADMORE)
+            updateRefreshState(State.LOAD_MORE_NO_MORE_DATA)
             smartRefreshLayout?.finishLoadMoreWithNoMoreData()
             return
         }
@@ -365,6 +354,7 @@ class RefreshHelper<DataBean>(
      * @param withAnim 设置是否有上划动画
      */
     fun callLoadMore(withAnim: Boolean = false) {
+        updateRefreshState(State.LOAD_MORE_START)
         if (fetchFromCachedData && !cachedDataList.isNullOrEmpty()) {
             doLoadMoreFromCachedData()
         } else {
@@ -387,6 +377,7 @@ class RefreshHelper<DataBean>(
      * @param withAnim 设置是否有下拉动画
      */
     fun callRefresh(withAnim: Boolean = true) {
+        updateRefreshState(State.REFRESH_START)
         //只有第一次刷新从缓存取数据
         if (isFirstCallRefresh && fetchFromCachedData && (queryRAMCachedData != null || queryDBCachedData != null)) {
             callRefreshFetchCachedData()
@@ -407,7 +398,6 @@ class RefreshHelper<DataBean>(
     }
 
     private fun callRefreshFetchCachedData() {
-        updateRefreshState(State.LOADING)
         if (queryRAMCachedData != null) {
             queryRAMCachedData()
         } else if (queryDBCachedData != null) {
@@ -473,12 +463,13 @@ class RefreshHelper<DataBean>(
         currentPage++
         if (currentPage > totalPage) {
             currentPage = totalPage
-            updateRefreshState(State.NO_MORE_DATA_LOADMORE)
+            updateRefreshState(State.LOAD_MORE_NO_MORE_DATA)
             smartRefreshLayout?.finishLoadMoreWithNoMoreData()
             return
         }
         if (requestData == null) {
             smartRefreshLayout?.finishLoadMore(false)
+            isLoadMore = false
             return
         }
         try {
@@ -500,7 +491,7 @@ class RefreshHelper<DataBean>(
                         updateRefreshState(State.EMPTY_DATA)
                         smartRefreshLayout?.finishLoadMore(true)
                     } else {
-                        updateRefreshState(State.NO_MORE_DATA_LOADMORE)
+                        updateRefreshState(State.LOAD_MORE_NO_MORE_DATA)
                         smartRefreshLayout?.finishLoadMoreWithNoMoreData()
                     }
                 }
@@ -512,9 +503,8 @@ class RefreshHelper<DataBean>(
                     } else if (it.size < dataPerPage) {
                         adapter.addAll(it.toMutableList())
                         smartRefreshLayout?.finishLoadMoreWithNoMoreData()
-                        updateRefreshState(State.NO_MORE_DATA_LOADMORE)
+                        updateRefreshState(State.LOAD_MORE_NO_MORE_DATA)
                     }
-
                 }
             }
         }
@@ -523,7 +513,6 @@ class RefreshHelper<DataBean>(
     private fun doRefresh() {
         currentPage = 1
         if (requestData == null) return
-        updateRefreshState(State.LOADING)
         try {
             refresh()
         } catch (e: Exception) {
@@ -556,7 +545,7 @@ class RefreshHelper<DataBean>(
 
 
     private fun updateRefreshState(state: State) {
-        onNextStateListenerList?.forEach { it.onNext(this, state) }
+        onStateSequenceListenerList?.forEach { it.onNext(this, state) }
 
         if (this.state == state) return
         this.state = state
@@ -567,10 +556,15 @@ class RefreshHelper<DataBean>(
 
         //默认处理
         when (state) {
-            State.LOADING -> stateViewLoading?.let {
-                coverView = it
-                stateViewContainer.addView(it, -1, -1)
+            State.REFRESH_START -> {
+                isLoadMore = false
+                stateViewRefreshStart?.let {
+                    coverView = it
+                    stateViewContainer.addView(it, -1, -1)
+                }
             }
+            State.REFRESH_SUCCESS -> {}
+
             State.EMPTY_DATA -> stateViewEmptyData?.let {
                 coverView = it
                 stateViewContainer.addView(it, -1, -1)
@@ -579,20 +573,36 @@ class RefreshHelper<DataBean>(
             State.EMPTY_DATA_ON_REFRESH -> {
                 setEmptyState()
             }
-            State.NO_MORE_DATA_LOADMORE -> {}
-            State.REFRESH_SUCCESS -> {}
-            State.LOAD_MORE_SUCCESS -> {}
 
-            State.NET_LOSE -> stateViewNetLose?.let {
-                coverView = it
-                stateViewContainer.addView(it, -1, -1)
+
+            State.LOAD_MORE_START -> {
+                isLoadMore = true
+            }
+            State.LOAD_MORE_SUCCESS -> {
+                isLoadMore = false
+            }
+            State.LOAD_MORE_NO_MORE_DATA -> {
+                isLoadMore = false
             }
 
-            State.ERROR -> stateViewError?.let {
-                coverView = it
-                stateViewContainer.addView(it, -1, -1)
+
+            State.NET_LOSE -> {
+                isLoadMore = false
+                stateViewNetLose?.let {
+                    coverView = it
+                    stateViewContainer.addView(it, -1, -1)
+                }
+            }
+
+            State.ERROR -> {
+                isLoadMore = false
+                stateViewError?.let {
+                    coverView = it
+                    stateViewContainer.addView(it, -1, -1)
+                }
             }
             State.NONE -> {}
+
         }
         //覆盖默认的处理
         onStateChangeListener?.onStateChange(this, state)
