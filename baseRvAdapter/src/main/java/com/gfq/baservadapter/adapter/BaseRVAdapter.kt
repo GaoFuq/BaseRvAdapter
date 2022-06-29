@@ -157,32 +157,25 @@ abstract class BaseRVAdapter<DataBean>
     override fun getItemCount(): Int = dataList.size
 
 
-    var helper: RefreshHelper<DataBean>? = null
+    var refreshHelper: RefreshHelper<DataBean>? = null
         private set
 
     private val handler by lazy { Handler(Looper.getMainLooper()) }
 
     override fun onViewAttachedToWindow(holder: BaseVH) {
-        if (helper?.isEnablePreLoadMore == true) {
-            if (itemCount - holder.bindingAdapterPosition == helper?.preLoadMoreItemCount
-                && helper?.isLoadMore == false
-                && helper?.state != State.LOAD_MORE_NO_MORE_DATA
-                && scrollState == RecyclerView.SCROLL_STATE_IDLE
+        if (refreshHelper?.isEnablePreLoadMore == true) {
+            if (itemCount - holder.bindingAdapterPosition == refreshHelper?.preLoadMoreItemCount
+                && refreshHelper?.isLoadMore == false
+                && refreshHelper?.state != State.LOAD_MORE_NO_MORE_DATA
             ) {
-                handler.post { helper?.callLoadMore(false) }
+                handler.post { refreshHelper?.callLoadMore(false) }
             }
         }
     }
 
 
-    private var scrollState = RecyclerView.SCROLL_STATE_IDLE
 
     open fun onAttachedToRefreshHelper(helper: RefreshHelper<DataBean>) {
-        this.helper = helper
-        helper.recyclerView?.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                scrollState = newState
-            }
-        })
+        this.refreshHelper = helper
     }
 }
