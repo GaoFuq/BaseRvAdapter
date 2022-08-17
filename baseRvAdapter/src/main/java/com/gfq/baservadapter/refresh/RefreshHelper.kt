@@ -16,7 +16,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.*
-import com.gfq.baservadapter.PagerSnapHelperZ
 import com.gfq.baservadapter.R
 import com.gfq.baservadapter.adapter.BaseRVAdapter
 import com.gfq.baservadapter.databinding.RefreshHelperLayoutBinding
@@ -136,8 +135,6 @@ class RefreshHelper<DataBean>(
     var isLoadMore = false
         private set
 
-    var isPagerStyle = false
-
     //开始预加载更多的item剩余个数
     var preLoadMoreItemCount = dataPerPage / 2
 
@@ -201,10 +198,6 @@ class RefreshHelper<DataBean>(
             setOnLoadMoreListener {
                 callLoadMore(false)
             }
-        }
-
-        if(isPagerStyle){
-            PagerSnapHelperZ().attachToRecyclerView(recyclerView)
         }
         initStateView()
     }
