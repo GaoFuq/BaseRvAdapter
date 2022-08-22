@@ -19,10 +19,7 @@ import androidx.recyclerview.widget.*
 import com.gfq.baservadapter.R
 import com.gfq.baservadapter.adapter.BaseRVAdapter
 import com.gfq.baservadapter.databinding.RefreshHelperLayoutBinding
-import com.scwang.smart.refresh.footer.ClassicsFooter
-import com.scwang.smart.refresh.header.MaterialHeader
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
-import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -57,7 +54,7 @@ class RefreshHelper<DataBean>(
     private val requestData: ((curPage: Int, dataPerPage: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
 ) {
 
-    private val tag = "【RefreshHelper】"
+    private val TAG = "【RefreshHelper】"
 
     lateinit var context: Context
         private set
@@ -124,10 +121,6 @@ class RefreshHelper<DataBean>(
      * false 关闭预加载并开启上拉加载
      */
     var isEnablePreLoadMore: Boolean = true
-        set(value) {
-            field = value
-            isEnablePullUpLoad = !value
-        }
 
     /**
      * 是否正在加载更多
@@ -154,10 +147,10 @@ class RefreshHelper<DataBean>(
     init {
         if (activityOrFragment is ComponentActivity) {
             context = activityOrFragment
-            Log.d(tag, "init context is ${activityOrFragment.componentName.className}")
+            Log.d(TAG, "init context is ${activityOrFragment.componentName.className}")
         } else if (activityOrFragment is Fragment) {
             activityOrFragment.context?.let { context = it }
-            Log.d(tag,
+            Log.d(TAG,
                 "init context is Fragment , name = ${activityOrFragment.javaClass.simpleName}")
         }
 
@@ -176,25 +169,22 @@ class RefreshHelper<DataBean>(
             }
             this.adapter = this@RefreshHelper.adapter
             setHasFixedSize(true)
-            setSupportChangeAnimation(false)
+//            setSupportChangeAnimation(false)
         }
 
-
-        isEnablePreLoadMore = false
 
         adapter.onAttachedToRefreshHelper(this)
 
         smartRefreshLayout?.run {
             setEnableLoadMore(isEnablePullUpLoad)
             setEnableRefresh(isEnablePullDownRefresh)
-            setRefreshHeader(MaterialHeader(context))
+//            setRefreshHeader(MaterialHeader(context))
+//            setRefreshFooter(ClassicsFooter(context).setSpinnerStyle(SpinnerStyle.FixedBehind))
             setEnableLoadMoreWhenContentNotFull(false)
             setEnableFooterFollowWhenNoMoreData(true)
-            setRefreshFooter(ClassicsFooter(context).setSpinnerStyle(SpinnerStyle.FixedBehind))
             setOnRefreshListener {
                 callRefresh(false)
             }
-
             setOnLoadMoreListener {
                 callLoadMore(false)
             }
@@ -263,7 +253,7 @@ class RefreshHelper<DataBean>(
 
     private fun autoCreateIfNeed() {
         if (autoCreate) {
-            Log.d(tag, "auto create")
+            Log.d(TAG, "auto create")
             val binding =
                 DataBindingUtil.inflate<RefreshHelperLayoutBinding>(LayoutInflater.from(context),
                     R.layout.refresh_helper_layout,
@@ -273,7 +263,7 @@ class RefreshHelper<DataBean>(
             recyclerView = binding.recyclerView
             stateViewContainer = binding.stateViewContainer
         } else {
-            Log.d(tag, "user xml create")
+            Log.d(TAG, "user xml create")
             val tempView = smartRefreshLayout?.findViewById<FrameLayout>(R.id.stateViewContainer)
             if (tempView == null) {
                 throw RuntimeException("必须设置一个 id = stateViewContainer 的 FrameLayout 作为状态容器")
@@ -538,6 +528,7 @@ class RefreshHelper<DataBean>(
 
 
     private fun updateRefreshState(state: State) {
+        Log.d(TAG, "updateRefreshState: " +state.name)
         onStateSequenceListenerList?.forEach { it.onNext(this, state) }
 
         if (this.state == state) return
@@ -597,6 +588,7 @@ class RefreshHelper<DataBean>(
             State.NONE -> {}
 
         }
+        Log.d(TAG, "onStateChange: ----------------- " +state.name)
         //覆盖默认的处理
         onStateChangeListener?.onStateChange(this, state)
     }
