@@ -17,9 +17,15 @@ enum class State{
          */
         EMPTY_DATA,
         /**
-         * 当前加载更多请求返回的数据为null或empty
+         * 当前加载更多请求返回的数据为null或empty 或者 数据量小于dataPerPage
          */
         LOAD_MORE_NO_MORE_DATA,
+
+        /**
+         * 当前加载更多请求返回的数据为null或empty 或者 数据量小于dataPerPage
+         */
+        REFRESH_NO_MORE_DATA,
+
 
         /**
          * 当前刷新请求返回的数据为null或empty

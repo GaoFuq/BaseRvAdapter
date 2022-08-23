@@ -518,9 +518,15 @@ class RefreshHelper<DataBean>(
                     smartRefreshLayout?.finishRefresh()
                 }
                 else -> {
-                    adapter.dataList = it.toMutableList()
-                    smartRefreshLayout?.finishRefresh()
-                    updateRefreshState(State.REFRESH_SUCCESS)
+                    if (it.size >= dataPerPage) {
+                        adapter.dataList = it.toMutableList()
+                        smartRefreshLayout?.finishRefresh()
+                        updateRefreshState(State.REFRESH_SUCCESS)
+                    } else if (it.size < dataPerPage) {
+                        adapter.dataList = it.toMutableList()
+                        smartRefreshLayout?.finishRefreshWithNoMoreData()
+                        updateRefreshState(State.REFRESH_NO_MORE_DATA)
+                    }
                 }
             }
         }
@@ -568,7 +574,9 @@ class RefreshHelper<DataBean>(
             State.LOAD_MORE_NO_MORE_DATA -> {
                 isLoadMore = false
             }
-
+            State.REFRESH_NO_MORE_DATA -> {
+                isLoadMore = false
+            }
 
             State.NET_LOSE -> {
                 isLoadMore = false
