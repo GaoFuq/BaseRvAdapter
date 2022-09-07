@@ -180,8 +180,8 @@ class RefreshHelper<DataBean>(
             setEnableRefresh(isEnablePullDownRefresh)
 //            setRefreshHeader(MaterialHeader(context))
 //            setRefreshFooter(ClassicsFooter(context).setSpinnerStyle(SpinnerStyle.FixedBehind))
-            setEnableLoadMoreWhenContentNotFull(false)
-            setEnableFooterFollowWhenNoMoreData(true)
+//            setEnableLoadMoreWhenContentNotFull(false)
+//            setEnableFooterFollowWhenNoMoreData(true)
             setOnRefreshListener {
                 callRefresh(false)
             }

@@ -66,7 +66,7 @@ abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val i
     /**
      * 单选
      */
-    fun doSingleSelect(holder: BaseVH, position: Int) {
+    fun doSingleSelect(holder: BaseVH?, position: Int) {
         if (dataList.isEmpty()) return
 
         whenPositionLegit(position) {
@@ -84,7 +84,7 @@ abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val i
      * 多选
      */
     fun doMultipleSelect(
-        holder: BaseVH,
+        holder: BaseVH?,
         position: Int,
         maxSelectCount: Int = -1,
         onCountOverMax: (() -> Unit)? = null,
@@ -137,7 +137,7 @@ abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val i
     }
 
 
-    fun setItemReSelect(holder: BaseVH, position: Int) {
+    fun setItemReSelect(holder: BaseVH?, position: Int) {
         whenPositionLegit(position) {
             Log.d("【BaseRVAdapter】", "setItemReSelect position = $position")
             onItemReSelect(holder, dataList[position], position)
@@ -171,10 +171,10 @@ abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val i
         dataList.firstOrNull { it.select }
 
 
-    open fun onItemSelected(holder: BaseVH, data: DataBean, position: Int) {}
+    open fun onItemSelected(holder: BaseVH?, data: DataBean, position: Int) {}
 
-    open fun onItemNotSelect(holder: BaseVH, data: DataBean, position: Int) {}
+    open fun onItemNotSelect(holder: BaseVH?, data: DataBean, position: Int) {}
 
-    open fun onItemReSelect(holder: BaseVH, data: DataBean, position: Int) {}
+    open fun onItemReSelect(holder: BaseVH?, data: DataBean, position: Int) {}
 
 }

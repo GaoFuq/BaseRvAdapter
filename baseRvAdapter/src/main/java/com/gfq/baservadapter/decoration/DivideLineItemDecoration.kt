@@ -16,7 +16,7 @@ class DivideLineItemDecoration(
     private val lineHeight: Float = 2f,
     private val leftMargin: Float = 0f,
     private val rightMargin: Float = 0f,
-    private val lineColor:Int = Color.GRAY
+    private val lineColor:Int = Color.TRANSPARENT
 ) : RecyclerView.ItemDecoration() {
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = lineColor }
