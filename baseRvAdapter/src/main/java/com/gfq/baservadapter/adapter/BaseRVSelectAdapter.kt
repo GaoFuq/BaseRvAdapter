@@ -13,9 +13,8 @@ import com.gfq.baservadapter.refresh.RVSelect
 abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val itemLayoutRes: Int) :
     BaseRVAdapter<DataBean>(itemLayoutRes) {
 
-    val NO_POSITION = -1
 
-    var lastSelectedPosition = NO_POSITION
+    var lastSingleSelectedPosition: Int? = null
         private set
 
 
@@ -33,34 +32,40 @@ abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val i
 
     override fun add(data: DataBean?, positionStart: Int) {
         super.add(data, positionStart)
-        if (lastSelectedPosition >= 0) {
-            if (lastSelectedPosition > positionStart) {
-                lastSelectedPosition++
+        lastSingleSelectedPosition?.let {
+            if (it >= 0) {
+                if (it > positionStart) {
+                    lastSingleSelectedPosition = it + 1
+                }
             }
         }
+
     }
 
     override fun addAll(list: Collection<DataBean>?, positionStart: Int) {
         super.addAll(list, positionStart)
         list ?: return
-        if (lastSelectedPosition >= 0) {
-            if (lastSelectedPosition >= positionStart) {
-                lastSelectedPosition += list.size
+        lastSingleSelectedPosition?.let {
+            if (it >= 0) {
+                if (it >= positionStart) {
+                    lastSingleSelectedPosition = it + list.size
+                }
             }
         }
+
     }
 
     override fun removeAt(position: Int): DataBean? {
         val result = super.removeAt(position)
         whenPositionLegit(position) {
-            lastSelectedPosition = NO_POSITION
+            lastSingleSelectedPosition = null
         }
         return result
     }
 
     override fun clear() {
         super.clear()
-        lastSelectedPosition = NO_POSITION
+        lastSingleSelectedPosition = null
     }
 
     /**
@@ -70,13 +75,13 @@ abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val i
         if (dataList.isEmpty()) return
 
         whenPositionLegit(position) {
-            if (lastSelectedPosition == position) {
+            if (lastSingleSelectedPosition == position) {
                 setItemReSelect(holder, position)
             } else {
                 setItemSelected(position)
-                setItemCancelSelect(lastSelectedPosition)
+                lastSingleSelectedPosition?.let { setItemCancelSelect(it) }
             }
-            lastSelectedPosition = position
+            lastSingleSelectedPosition = position
         }
     }
 
@@ -137,19 +142,19 @@ abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val i
     }
 
 
-    fun setItemReSelect(holder: BaseVH?, position: Int) {
+    private fun setItemReSelect(holder: BaseVH?, position: Int) {
         whenPositionLegit(position) {
             Log.d("【BaseRVAdapter】", "setItemReSelect position = $position")
             onItemReSelect(holder, dataList[position], position)
         }
-
     }
 
-    fun setItemSelected(position: Int) {
+    private fun setItemSelected(position: Int) {
         whenPositionLegit(position) {
             Log.d("【BaseRVAdapter】", "setItemSelected position = $position")
             dataList[position].select = true
-            notifyItemChanged(position,"selectChanged")
+            notifyItemChanged(position, "selectChanged")
+            lastSingleSelectedPosition = position
         }
     }
 
@@ -158,7 +163,7 @@ abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val i
         whenPositionLegit(position) {
             Log.d("【BaseRVAdapter】", "setItemCancelSelect position = $position")
             dataList[position].select = false
-            notifyItemChanged(position,"selectChanged")
+            notifyItemChanged(position, "selectChanged")
         }
     }
 
