@@ -159,7 +159,6 @@ abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val i
     private fun setItemSelected(position: Int) {
         whenPositionLegit(position) {
             Log.d("【BaseRVAdapter】", "setItemSelected position = $position")
-            lastSingleSelectedPosition = position
             dataList[position].select = true
             notifyItemChanged(position, "selectChanged")
         }
