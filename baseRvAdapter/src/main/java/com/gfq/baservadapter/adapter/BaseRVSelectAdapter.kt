@@ -18,6 +18,13 @@ abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val i
         private set
 
 
+    override var dataList = mutableListOf<DataBean>()
+        set(value) {
+            lastSingleSelectedPosition=null
+            field = value
+            notifyDataSetChanged()
+        }
+
     override fun onBindViewHolder(holder: BaseVH, position: Int) {
         super.onBindViewHolder(holder, position)
 
@@ -152,9 +159,9 @@ abstract class BaseRVSelectAdapter<DataBean : RVSelect>(@LayoutRes private val i
     private fun setItemSelected(position: Int) {
         whenPositionLegit(position) {
             Log.d("【BaseRVAdapter】", "setItemSelected position = $position")
+            lastSingleSelectedPosition = position
             dataList[position].select = true
             notifyItemChanged(position, "selectChanged")
-            lastSingleSelectedPosition = position
         }
     }
 
