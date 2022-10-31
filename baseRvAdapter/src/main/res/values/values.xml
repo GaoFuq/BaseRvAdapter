@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <dimen name="dp8">8dp</dimen>
+    <dimen name="addressPickerDialogRadius">@dimen/dp8</dimen>
+    <dimen name="addressPickerRVHeight">@dimen/dp200</dimen>
+    <dimen name="addressPickerConfirmTextHeight">@dimen/dp45</dimen>
+    <dimen name="dp200">200dp</dimen>
+    <dimen name="dp45">45dp</dimen>
+    <dimen name="dp40">40dp</dimen>
+    <dimen name="dp70">70dp</dimen>
+    <dimen name="dp16">16dp</dimen>
+    <color name="addressPickerDialogBg">#ffffff</color>
 
 </resources>
