@@ -58,12 +58,14 @@ private var currentType = HandleResultType.none
  */
 
 fun PictureSelector.openWithSquareCrop(
+    chooseMode:Int = PictureMimeType.ofImage(),
     maxSelectNum: Int = 9,
     selectedNum: Int,
     maxFileSize: Float = 10f,
 ) {
     openWithCrop(
         requestCode = RequestCode.auto,
+        chooseMode = chooseMode,
         maxSelectNum = maxSelectNum,
         selectedNum = selectedNum,
         maxFileSize = maxFileSize,
@@ -79,12 +81,14 @@ fun PictureSelector.openWithSquareCrop(
  */
 
 fun PictureSelector.openWithCircleCrop(
+    chooseMode:Int = PictureMimeType.ofImage(),
     maxSelectNum: Int = 9,
     selectedNum: Int,
     maxFileSize: Float = 10f,
 ) {
     openWithCrop(
         requestCode = RequestCode.auto,
+        chooseMode = chooseMode,
         maxSelectNum = maxSelectNum,
         selectedNum = selectedNum,
         maxFileSize = maxFileSize,
@@ -101,6 +105,7 @@ fun PictureSelector.openWithCircleCrop(
 
 fun PictureSelector.openWithCrop(
     requestCode: RequestCode = RequestCode.auto,
+    chooseMode:Int = PictureMimeType.ofImage(),
     maxSelectNum: Int,
     selectedNum: Int,
     maxFileSize: Float,
@@ -109,7 +114,7 @@ fun PictureSelector.openWithCrop(
     isCircleCrop: Boolean,
 ) {
     currentType = HandleResultType.crop
-    openGallery(PictureMimeType.ofImage())
+    openGallery(chooseMode)
         .isWeChatStyle(true)
         .imageEngine(GlideEngine.createGlideEngine())
         .isNotPreviewDownload(true)
@@ -130,17 +135,21 @@ fun PictureSelector.openWithCrop(
 /**
  * 选择图片，压缩。
  * 支持同时选择图片和Gif，但是选择的Gif不会被压缩。
+ * @param chooseMode Select the type of picture you want，all or Picture or Video .
+ * @return LocalMedia PictureSelectionModel
+ * Use {@link PictureMimeType.ofAll(),ofImage(),ofVideo(),ofAudio()}.
  */
 
 fun PictureSelector.openWithCompress(
     requestCode: RequestCode = RequestCode.auto,
+    chooseMode:Int = PictureMimeType.ofImage(),
     maxSelectNum: Int = 9,
     selectedNum: Int,
     maxFileSize: Float = 10f,
     isShowGif: Boolean = false,
 ) {
     currentType = HandleResultType.compress
-    openGallery(PictureMimeType.ofImage())
+    openGallery(chooseMode)
         .isWeChatStyle(true)
         .imageEngine(GlideEngine.createGlideEngine())
         .isNotPreviewDownload(true)
