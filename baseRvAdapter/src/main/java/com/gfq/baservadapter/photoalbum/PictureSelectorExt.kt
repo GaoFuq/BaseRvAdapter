@@ -121,11 +121,13 @@ fun PictureSelector.openWithCrop(
         .circleDimmedLayer(isCircleCrop)//是否圆形裁剪
         .withAspectRatio(aspect_ratio_x, aspect_ratio_y)// 裁剪比例 如16:9 3:2 3:4 1:1 可自定义
         .freeStyleCropEnabled(false)// 裁剪框是否可拖拽
-        .showCropFrame(false)// 是否显示裁剪矩形边框 圆形裁剪时建议设为false
+        .showCropFrame(!isCircleCrop)// 是否显示裁剪矩形边框 圆形裁剪时建议设为false
         .showCropGrid(false)// 是否显示裁剪矩形网格 圆形裁剪时建议设为false
         .rotateEnabled(false)
         .forResult(requestCode.code)
 }
+
+
 
 /**
  * 选择图片，压缩。
