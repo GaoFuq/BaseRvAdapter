@@ -19,8 +19,8 @@ import com.gfq.baservadapter.adapter.BaseVH
  */
 abstract class PhotoAlbumBaseAdapter(
     itemLayoutRes: Int,
-    private val maxSelectNum: Int = 9,
-    private val order: Order = Order.inOrder,
+    val maxSelectNum: Int = 9,
+    val order: Order = Order.inOrder,
 ) : BaseRVAdapter<String>(itemLayoutRes), PhotoAlbum {
 
 

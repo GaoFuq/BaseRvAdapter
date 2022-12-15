@@ -25,8 +25,8 @@ abstract class PhotoAlbumDefaultAdapter(
     itemLayoutRes: Int,
     private val isShowGif: Boolean = false,
     //文件的大小,单位 M
-    private val maxFileSize: Float = 10f,
-    private val maxSelectNum: Int = 9,
+    val maxFileSize: Float = 10f,
+    maxSelectNum: Int = 9,
     order: Order = Order.inOrder,
 ) : PhotoAlbumBaseAdapter(itemLayoutRes, maxSelectNum, order) {
 

@@ -167,6 +167,7 @@ abstract class BaseRVAdapter<DataBean>
             if (itemCount - holder.bindingAdapterPosition == refreshHelper?.preLoadMoreItemCount
                 && refreshHelper?.isLoadMore == false
                 && refreshHelper?.state != State.LOAD_MORE_NO_MORE_DATA
+                && refreshHelper?.state != State.REFRESH_NO_MORE_DATA
             ) {
                 handler.post { refreshHelper?.callLoadMore(false) }
             }
