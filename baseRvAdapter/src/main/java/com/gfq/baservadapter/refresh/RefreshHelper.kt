@@ -75,26 +75,21 @@ class RefreshHelper<DataBean>(
         private set
 
     /**
-     *  每一个 state 都会回调，可能有连续相同的 state
+     *  当 state 发生改变时回调。
      *  @see updateRefreshState
      */
-    private var onStateSequenceListenerList: ArrayList<OnStateSequenceListener<DataBean>>? = null
+    private var onStateChangeListenerList: ArrayList<OnStateChangeListener<DataBean>>? = null
 
-    /**
-     * 当 state 发生改变时回调。
-     * @see updateRefreshState
-     */
-    var onStateChangeListener: OnStateChangeListener<DataBean>? = null
 
-    fun addOnStateSequenceListener(listener: OnStateSequenceListener<DataBean>) {
-        if (onStateSequenceListenerList == null) {
-            onStateSequenceListenerList = arrayListOf()
+    fun addOnStateChangeListener(listener: OnStateChangeListener<DataBean>) {
+        if (onStateChangeListenerList == null) {
+            onStateChangeListenerList = arrayListOf()
         }
-        onStateSequenceListenerList?.add(listener)
+        onStateChangeListenerList?.add(listener)
     }
 
-    fun removeOnStateSequenceListener(listener: OnStateSequenceListener<DataBean>) {
-        onStateSequenceListenerList?.remove(listener)
+    fun removeOnStateChangeListener(listener: OnStateChangeListener<DataBean>) {
+        onStateChangeListenerList?.remove(listener)
     }
 
     /**
@@ -534,8 +529,7 @@ class RefreshHelper<DataBean>(
 
 
     private fun updateRefreshState(state: State) {
-        Log.d(TAG, "updateRefreshState: " +state.name)
-        onStateSequenceListenerList?.forEach { it.onNext(this, state) }
+//        Log.d(TAG, "updateRefreshState: state = " +state.name)
 
         if (this.state == state) return
         this.state = state
@@ -598,7 +592,8 @@ class RefreshHelper<DataBean>(
         }
         Log.d(TAG, "onStateChange: ----------------- " +state.name)
         //覆盖默认的处理
-        onStateChangeListener?.onStateChange(this, state)
+        onStateChangeListenerList?.forEach { it.onStateChange(this, state) }
+
     }
 
 

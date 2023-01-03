@@ -6,11 +6,11 @@ import android.widget.TextView
 import com.scwang.smart.refresh.footer.ClassicsFooter
 import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 
-class MyClassicsFooter(
-    context: Context?,
-    private val noMoreDataIconIdRes: Int = 0,
-    private val noMoreDataText: String = "我是底线的~",
-) : ClassicsFooter(context) {
+class MyClassicsFooter(context: Context) : ClassicsFooter(context) {
+
+     var noMoreDataIconIdRes: Int = 0
+     var noMoreDataText: String = "我是有底线的~"
+
     override fun getSpinnerStyle(): SpinnerStyle {
         return SpinnerStyle.Translate
     }
