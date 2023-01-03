@@ -6,7 +6,7 @@ import android.widget.TextView
 import com.scwang.smart.refresh.footer.ClassicsFooter
 import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 
-class MyClassicsFooter(context: Context) : ClassicsFooter(context) {
+class MyClassicsFooter(context: Context?) : ClassicsFooter(context) {
 
      var noMoreDataIconIdRes: Int = 0
      var noMoreDataText: String = "我是有底线的~"
