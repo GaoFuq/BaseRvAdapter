@@ -27,8 +27,6 @@ inline fun <reified T> FragmentActivity.refreshHelperAutoCreate(
     stateView: IStateView? = null,
     dataPerPage: Int,
     crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
-    noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
 ): RefreshHelper<T> {
     return RefreshHelper(
@@ -39,8 +37,6 @@ inline fun <reified T> FragmentActivity.refreshHelperAutoCreate(
                 bindAdapterItemView(this, holder, data, position)
             }
         },
-        queryRAMCachedData = queryRAMCachedData,
-        queryDBCachedData = queryDBCachedData,
         requestData = request,
         stateView = stateView,
         dataPerPage = dataPerPage,
@@ -54,16 +50,12 @@ inline fun <reified T> FragmentActivity.refreshHelperAutoCreate(
     stateView: IStateView? = null,
     dataPerPage: Int,
     adapter: BaseRVAdapter<T>,
-    noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
-    noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
 ): RefreshHelper<T> {
     return RefreshHelper(
         autoCreate = true,
         activityOrFragment = this,
         adapter = adapter,
-        queryRAMCachedData = queryRAMCachedData,
-        queryDBCachedData = queryDBCachedData,
         requestData = request,
         stateView = stateView,
         dataPerPage = dataPerPage,
@@ -79,16 +71,12 @@ inline fun <reified T> Fragment.refreshHelperAutoCreate(
     stateView: IStateView? = null,
     dataPerPage: Int,
     adapter:BaseRVAdapter<T>,
-    noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
-    noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
 ): RefreshHelper<T> {
     return RefreshHelper(
         autoCreate = true,
         activityOrFragment = this,
         adapter = adapter,
-        queryRAMCachedData = queryRAMCachedData,
-        queryDBCachedData = queryDBCachedData,
         requestData = request,
         stateView = stateView,
         dataPerPage = dataPerPage,
@@ -105,8 +93,6 @@ inline fun <reified T> FragmentActivity.refreshHelperNormalCreate(
     stateView: IStateView? = null,
     dataPerPage: Int,
     crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
-    noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
 ): RefreshHelper<T> {
     return RefreshHelper(
@@ -117,8 +103,6 @@ inline fun <reified T> FragmentActivity.refreshHelperNormalCreate(
                 bindAdapterItemView(this, holder, data, position)
             }
         },
-        queryRAMCachedData = queryRAMCachedData,
-        queryDBCachedData = queryDBCachedData,
         requestData = request,
         stateView = stateView,
         smartRefreshLayout = smartRefreshLayout,
@@ -134,16 +118,12 @@ inline fun <reified T> FragmentActivity.refreshHelperNormalCreate(
     stateView: IStateView? = null,
     dataPerPage: Int,
     adapter: BaseRVAdapter<T>,
-    noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
-    noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
 ): RefreshHelper<T> {
     return RefreshHelper(
         autoCreate = false,
         activityOrFragment = this,
         adapter =adapter,
-        queryRAMCachedData = queryRAMCachedData,
-        queryDBCachedData = queryDBCachedData,
         requestData = request,
         stateView = stateView,
         smartRefreshLayout = smartRefreshLayout,
@@ -160,8 +140,6 @@ inline fun <reified T> Fragment.refreshHelperNormalCreate(
     stateView: IStateView? = null,
     dataPerPage: Int,
     crossinline bindAdapterItemView: (adapter: BaseRVAdapter<T>, holder: BaseVH, data: T, position: Int) -> Unit,
-    noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
-    noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
 ): RefreshHelper<T> {
     return RefreshHelper(
@@ -172,8 +150,6 @@ inline fun <reified T> Fragment.refreshHelperNormalCreate(
                 bindAdapterItemView(this, holder, data, position)
             }
         },
-        queryRAMCachedData = queryRAMCachedData,
-        queryDBCachedData = queryDBCachedData,
         requestData = request,
         smartRefreshLayout = smartRefreshLayout,
         recyclerView = recyclerView,
@@ -189,16 +165,12 @@ inline fun <reified T> Fragment.refreshHelperNormalCreate(
     stateView: IStateView? = null,
     dataPerPage: Int,
     adapter: BaseRVAdapter<T>,
-    noinline queryRAMCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
-    noinline queryDBCachedData: ((RefreshHelper<T>) -> List<T>?)? = null,
     noinline request: (curPage: Int, dataPerPage: Int, callback: (List<T>?) -> Unit) -> Unit,
 ): RefreshHelper<T> {
     return RefreshHelper(
         autoCreate = false,
         activityOrFragment = this,
         adapter = adapter,
-        queryRAMCachedData = queryRAMCachedData,
-        queryDBCachedData = queryDBCachedData,
         requestData = request,
         smartRefreshLayout = smartRefreshLayout,
         recyclerView = recyclerView,

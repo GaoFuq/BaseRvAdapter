@@ -49,8 +49,6 @@ class RefreshHelper<DataBean>(
     var smartRefreshLayout: SmartRefreshLayout? = null,
     var recyclerView: RecyclerView? = null,
     private val stateView: IStateView? = null,
-    private val queryRAMCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
-    private val queryDBCachedData: ((RefreshHelper<DataBean>) -> List<DataBean>?)? = null,
     private val requestData: ((curPage: Int, dataPerPage: Int, callback: (List<DataBean>?) -> Unit) -> Unit)? = null,
 ) {
 
@@ -64,11 +62,6 @@ class RefreshHelper<DataBean>(
      */
     var totalPage: Int = 999
 
-
-    private var fetchFromCachedData = true
-    private var isFirstCallRefresh = true
-    //缓存的数据源
-    private var cachedDataList: List<DataBean>? = null
 
     //recyclerView 的容器；无网络，无数据等视图显示的区域
     lateinit var stateViewContainer: FrameLayout
@@ -279,32 +272,6 @@ class RefreshHelper<DataBean>(
     }
 
 
-    private fun doLoadMoreFromCachedData() {
-        currentPage++
-        if (currentPage > totalPage) {
-            currentPage = totalPage
-            updateRefreshState(State.LOAD_MORE_NO_MORE_DATA)
-            smartRefreshLayout?.finishLoadMoreWithNoMoreData()
-            return
-        }
-
-        try {
-            val dataList = splitPage(currentPage, dataPerPage, cachedDataList)
-            if (dataList.isNullOrEmpty()) {
-                currentPage--
-                fetchFromCachedData = false
-                callLoadMore(true)
-            } else {
-                addAll(dataList)
-                smartRefreshLayout?.finishLoadMore(true)
-                updateRefreshState(State.LOAD_MORE_SUCCESS)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            smartRefreshLayout?.finishLoadMore(false)
-            updateRefreshState(State.ERROR)
-        }
-    }
 
     /**
      * 当列表的item数据发生改变后，调用该方法更新列表。避免网络刷新请求。
@@ -332,20 +299,14 @@ class RefreshHelper<DataBean>(
      * @param withAnim 设置是否有上划动画
      */
     fun callLoadMore(withAnim: Boolean = false) {
-        updateRefreshState(State.LOAD_MORE_START)
-        if (fetchFromCachedData && !cachedDataList.isNullOrEmpty()) {
-            doLoadMoreFromCachedData()
+        if (withAnim) {
+            smartRefreshLayout?.autoLoadMore()
         } else {
-            cachedDataList = null
-            if (withAnim) {
-                smartRefreshLayout?.autoLoadMore()
+            if (isNetworkConnected(context)) {
+                doLoadMore()
             } else {
-                if (isNetworkConnected(context)) {
-                    doLoadMore()
-                } else {
-                    smartRefreshLayout?.finishLoadMore(false)
-                    updateRefreshState(State.NET_LOSE)
-                }
+                smartRefreshLayout?.finishLoadMore(false)
+                updateRefreshState(State.NET_LOSE)
             }
         }
     }
@@ -355,74 +316,21 @@ class RefreshHelper<DataBean>(
      * @param withAnim 设置是否有下拉动画
      */
     fun callRefresh(withAnim: Boolean = true) {
-        updateRefreshState(State.REFRESH_START)
-        //只有第一次刷新从缓存取数据
-        if (isFirstCallRefresh && fetchFromCachedData && (queryRAMCachedData != null || queryDBCachedData != null)) {
-            callRefreshFetchCachedData()
+        if (withAnim) {
+            smartRefreshLayout?.autoRefresh()
         } else {
-            fetchFromCachedData = false
-            cachedDataList = null
-            if (withAnim) {
-                smartRefreshLayout?.autoRefresh()
+            if (isNetworkConnected(context)) {
+                doRefresh()
             } else {
-                if (isNetworkConnected(context)) {
-                    doRefresh()
-                } else {
-                    smartRefreshLayout?.finishRefresh(false)
-                    updateRefreshState(State.NET_LOSE)
-                }
+                smartRefreshLayout?.finishRefresh(false)
+                updateRefreshState(State.NET_LOSE)
             }
         }
     }
 
-    private fun callRefreshFetchCachedData() {
-        if (queryRAMCachedData != null) {
-            queryRAMCachedData()
-        } else if (queryDBCachedData != null) {
-            queryDBCachedData()
-        }
-        isFirstCallRefresh = false
-    }
 
-    private fun queryRAMCachedData() {
-        cachedDataList = queryRAMCachedData?.invoke(this)
-        if (cachedDataList.isNullOrEmpty()) {
-            fetchFromCachedData = false
-            queryDBCachedData()
-        } else {
-            val splitPage = splitPage(1, dataPerPage, cachedDataList)
-            setData(splitPage)
-            smartRefreshLayout?.finishRefresh(true)
-            if (splitPage.isNullOrEmpty() && adapter.dataList.isEmpty()) {
-                updateRefreshState(State.EMPTY_DATA)
-            } else {
-                updateRefreshState(State.REFRESH_SUCCESS)
-            }
-        }
-    }
 
-    private fun queryDBCachedData() {
-        launch(Dispatchers.IO) {
-            cachedDataList = queryDBCachedData?.invoke(this)
-            if (cachedDataList.isNullOrEmpty()) {
-                fetchFromCachedData = false
-                launch(Dispatchers.Main) {
-                    callRefresh(true)
-                }
-            } else {
-                launch(Dispatchers.Main) {
-                    val splitPage = splitPage(1, dataPerPage, cachedDataList)
-                    setData(splitPage)
-                    smartRefreshLayout?.finishRefresh(true)
-                    if (splitPage.isNullOrEmpty() && adapter.dataList.isEmpty()) {
-                        updateRefreshState(State.EMPTY_DATA)
-                    } else {
-                        updateRefreshState(State.REFRESH_SUCCESS)
-                    }
-                }
-            }
-        }
-    }
+
 
 
     fun launch(context: CoroutineContext = Dispatchers.Main, block: () -> Unit) {
@@ -438,6 +346,7 @@ class RefreshHelper<DataBean>(
     }
 
     private fun doLoadMore() {
+        updateRefreshState(State.LOAD_MORE_START)
         currentPage++
         if (currentPage > totalPage) {
             currentPage = totalPage
@@ -489,6 +398,7 @@ class RefreshHelper<DataBean>(
     }
 
     private fun doRefresh() {
+        updateRefreshState(State.REFRESH_START)
         currentPage = 1
         if (requestData == null) return
         try {
@@ -639,7 +549,7 @@ class RefreshHelper<DataBean>(
 
 
     /**
-     * 缓存数据分页
+     * 数据分页
      */
     fun splitPage(
         curPage: Int,

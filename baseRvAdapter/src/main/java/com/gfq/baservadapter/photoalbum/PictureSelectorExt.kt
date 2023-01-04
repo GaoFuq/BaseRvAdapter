@@ -58,7 +58,7 @@ private var currentType = HandleResultType.none
  */
 
 fun PictureSelector.openWithSquareCrop(
-    chooseMode:Int = PictureMimeType.ofImage(),
+    chooseMode: Int = PictureMimeType.ofImage(),
     maxSelectNum: Int = 9,
     selectedNum: Int,
     maxFileSize: Float = 10f,
@@ -81,7 +81,7 @@ fun PictureSelector.openWithSquareCrop(
  */
 
 fun PictureSelector.openWithCircleCrop(
-    chooseMode:Int = PictureMimeType.ofImage(),
+    chooseMode: Int = PictureMimeType.ofImage(),
     maxSelectNum: Int = 9,
     selectedNum: Int,
     maxFileSize: Float = 10f,
@@ -105,7 +105,7 @@ fun PictureSelector.openWithCircleCrop(
 
 fun PictureSelector.openWithCrop(
     requestCode: RequestCode = RequestCode.auto,
-    chooseMode:Int = PictureMimeType.ofImage(),
+    chooseMode: Int = PictureMimeType.ofImage(),
     maxSelectNum: Int,
     selectedNum: Int,
     maxFileSize: Float,
@@ -133,7 +133,6 @@ fun PictureSelector.openWithCrop(
 }
 
 
-
 /**
  * 选择图片，压缩。
  * 支持同时选择图片和Gif，但是选择的Gif不会被压缩。
@@ -144,7 +143,7 @@ fun PictureSelector.openWithCrop(
 
 fun PictureSelector.openWithCompress(
     requestCode: RequestCode = RequestCode.auto,
-    chooseMode:Int = PictureMimeType.ofImage(),
+    chooseMode: Int = PictureMimeType.ofImage(),
     maxSelectNum: Int = 9,
     selectedNum: Int,
     maxFileSize: Float = 10f,
@@ -153,6 +152,8 @@ fun PictureSelector.openWithCompress(
     currentType = HandleResultType.compress
     openGallery(chooseMode)
         .isWeChatStyle(true)
+//        .setPictureUIStyle()
+//        .setPictureWindowAnimationStyle()
         .imageEngine(GlideEngine.createGlideEngine())
         .isNotPreviewDownload(true)
         .maxSelectNum(maxSelectNum - selectedNum)
@@ -219,7 +220,11 @@ fun createPictureSelector(activityOrFragment: Any): PictureSelector {
 }
 
 @JvmName("previewString")
-fun PictureSelector.preview(position: Int, pathList: List<String>) {
+fun PictureSelector.preview(
+    position: Int,
+    pathList: List<String>,
+    style: Int = com.gfq.baservadapter.R.style.picture_default_style,
+) {
     val mediaList = mutableListOf<LocalMedia>()
     pathList.forEach {
         if (it.isNotEmpty()) {
@@ -228,12 +233,16 @@ fun PictureSelector.preview(position: Int, pathList: List<String>) {
             mediaList.add(media)
         }
     }
-    preview(position, mediaList)
+    preview(position, mediaList, style)
 }
 
 @JvmName("previewMedia")
-fun PictureSelector.preview(position: Int, mediaList: List<LocalMedia>) {
-    themeStyle(com.gfq.baservadapter.R.style.picture_default_style)
+fun PictureSelector.preview(
+    position: Int,
+    mediaList: List<LocalMedia>,
+    style: Int = com.gfq.baservadapter.R.style.picture_default_style,
+) {
+    themeStyle(style)
         .isNotPreviewDownload(true)
         .imageEngine(GlideEngine.createGlideEngine())
         .openExternalPreview(position, mediaList)
